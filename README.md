@@ -1,121 +1,51 @@
-# ML Object Detection Project
+# Football player detection
 
-## Project Title and Description
-**Detect football players in videos using YOLOv5 for training and YOLOv8 for inference**
+This repository contains a four-class Roboflow football dataset (ball, goalkeeper, player, referee), sample video, pretrained YOLO weights, and scripts for annotated inference and evaluation.
 
-This project focuses on detecting football players in video footage using state-of-the-art object detection models. The approach leverages YOLOv5 for the training phase and YOLOv8 for inference, combining the strengths of both versions for optimal performance.
+## Setup
 
-## Dataset Information
-The dataset used for this project is sourced from Roboflow and contains:
-- **663 annotated images** specifically labeled for football player detection
-- Format: YOLO v5 PyTorch format
-- Pre-processing applied:
-  - 50% probability of horizontal flip
-  - Random brightness adjustment between -20% and +20%
-
-The dataset is named "football-players-detection" and was exported from Roboflow on December 5, 2022. You can access the original dataset [here](https://universe.roboflow.com/roboflow-jvuqo/football-players-detection-3zvbc).
-
-## Prerequisites
-Before running this project, ensure you have the following installed:
-- Python 3.x (recommended 3.8 or higher)
-- pip (Python package manager)
-- Required Python packages:
-  - ultralytics
-  - opencv-python
-  - roboflow
-
-## Installation Instructions
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/RockENZO/ML-object-detection-project.git
-   cd ML-object-detection-project
-   ```
-
-2. Install the required dependencies:
-   ```bash
-   pip install ultralytics opencv-python roboflow
-   ```
-
-## Usage Guide
-
-### Training the Model
-The training process uses YOLOv5 on the Roboflow dataset. The dataset has already been downloaded and organized in the `training/` directory.
-
-To train the model:
-```bash
-# Navigate to the project directory
-cd ML-object-detection-project
-
-# Train using the provided data.yaml configuration
-yolo task=detect mode=train model=yolov5s.pt data=training/football-players-detection-1/data.yaml epochs=100 imgsz=640
-```
-
-Training parameters can be adjusted as needed:
-- `epochs`: Number of training epochs (default: 100)
-- `imgsz`: Image size for training (default: 640)
-- `model`: YOLOv5 variant to use (yolov5s.pt, yolov5m.pt, yolov5l.pt, etc.)
-
-### Running Inference
-For inference, the project uses YOLOv8 via the `yolo_inference.py` script:
+Use Python 3.9 or newer. From the repository root:
 
 ```bash
-# Run the inference script
-python yolo_inference.py
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 ```
 
-This will:
-1. Load the YOLOv8s model
-2. Process the sample video (`input_videos/08fd33_4.mp4`)
-3. Save the results with bounding boxes to the `runs/detect/predict/` directory
-4. Print detection results to the console
+The dataset is from [Roboflow Universe](https://universe.roboflow.com/roboflow-jvuqo/football-players-detection-3zvbc/dataset/1). Its export identifies the dataset license as CC BY 4.0. Check the source terms before redistributing the images.
 
-To run inference on a different video, modify the `yolo_inference.py` script:
-```python
-# Change this line to point to your video
-results = model.predict('path/to/your/video.mp4', save=True)
+## Annotated inference
+
+```bash
+python yolo_inference.py predict
+python yolo_inference.py predict --input input_videos/08fd33_4.mp4 --output-dir runs/my-prediction
 ```
 
-## Project Structure
-```
-ML-object-detection-project/
-├── input_videos/                 # Input video files for processing
-│   └── 08fd33_4.mp4             # Sample input video
-├── models/                      # Pre-trained model weights
-│   ├── yolov5su.pt              # YOLOv5 small model
-│   └── yolov8s.pt               # YOLOv8 small model
-├── runs/                        # Output from training and inference
-│   └── detect/                  # Detection results
-│       ├── predict/             # Latest inference results
-│       ├── predict1/            # Previous inference runs
-│       └── predict2/            # Earlier inference runs
-├── training/                    # Training dataset and configuration
-│   └── football-players-detection-1/
-│       ├── data.yaml           # Dataset configuration for YOLO
-│       ├── football-players-detection-1/  # Actual dataset
-│       │   ├── train/          # Training images and labels
-│       │   ├── val/            # Validation images and labels
-│       │   └── test/           # Test images and labels
-│       ├── README.dataset.txt  # Dataset information
-│       └── README.roboflow.txt # Roboflow export details
-├── tracker/                     # Object tracking utilities
-│   ├── __init__.py
-│   └── tracker.py               # Tracking implementation
-├── utils/                       # Utility functions
-│   ├── __init__.py
-│   └── video_utils.py           # Video processing helpers
-├── yolo_inference.py            # Main inference script (YOLOv8)
-├── main.py                      # Alternative entry point
-└── README.md                    # This file
+The default model is the bundled `models/yolov8s.pt`. This is a **pretrained** checkpoint; this repository does not include a documented fine-tuned checkpoint. Pass `--model path/to/your/best.pt` to evaluate or use a separately trained model. Predictions with drawn boxes are saved under the requested output directory. `python main.py predict` provides the same interface.
+
+## Training and evaluation
+
+The checked-in dataset has train, validation, and test image and label folders. Training uses the training split and validation uses the validation split:
+
+```bash
+yolo detect train model=models/yolov8s.pt data=training/football-players-detection-1/data.yaml epochs=100 imgsz=640
 ```
 
-## Model Details
-- **Training Model**: YOLOv5 (selected for its proven performance and stability in training scenarios)
-- **Inference Model**: YOLOv8s (chosen for its improved speed and accuracy in real-time applications)
+Use the resulting `best.pt` checkpoint for a single, held-out **test** evaluation:
 
-## License
-This dataset is provided by a Roboflow user under the CC BY 4.0 license. Please refer to the original Roboflow dataset page for specific licensing details.
+```bash
+python yolo_inference.py --model runs/detect/train/weights/best.pt evaluate
+```
 
-## Acknowledgments
-- Roboflow for providing the annotated dataset
-- Ultralytics for the YOLOv5 and YOLOv8 implementations
-- The open-source computer vision community
+The command writes `runs/codex-evaluate/metrics.json` with box precision, recall, mAP@0.5, and mAP@0.5:0.95. Record the checkpoint, dataset version, image size, Ultralytics version, and exact command with any performance claim. The test split must remain untouched during model selection. Do not compare a YOLOv5 training result with inference from different YOLOv8 weights as though they were one model.
+
+The profile's **97.5% precision** and **85% less manual review** figures cannot currently be reproduced from the checked-in code: there is no saved test report, evaluation command, or manual-review study. Treat them as unverified until their underlying results are published.
+
+## Project layout
+
+- `yolo_inference.py`: annotated prediction and test evaluation CLI
+- `main.py`: compatibility entry point to the same CLI
+- `models/`: bundled pretrained weights
+- `training/football-players-detection-1/`: Roboflow dataset and `data.yaml`
+- `input_videos/`: sample input
+- `runs/`: generated predictions and evaluation results
