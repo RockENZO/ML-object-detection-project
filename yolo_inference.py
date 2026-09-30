@@ -22,10 +22,15 @@ def build_parser() -> argparse.ArgumentParser:
     predict.add_argument("--input", type=Path, default=ROOT / "input_videos" / "08fd33_4.mp4")
     predict.add_argument("--output-dir", type=Path, default=ROOT / "runs" / "codex-predict")
 
+    predict.add_argument("--imgsz", type=int, default=640)
+    predict.add_argument("--device", default="cpu")
+
     evaluate = subcommands.add_parser("evaluate", help="Evaluate on the held-out test split")
     evaluate.add_argument("--data", type=Path, default=DEFAULT_DATA)
     evaluate.add_argument("--output-dir", type=Path, default=ROOT / "runs" / "codex-evaluate")
     evaluate.add_argument("--imgsz", type=int, default=640)
+    evaluate.add_argument("--batch", type=int, default=4)
+    evaluate.add_argument("--device", default="cpu")
     return parser
 
 
@@ -44,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "predict":
         if not args.input.is_file():
             raise SystemExit(f"Input file not found: {args.input}")
-        model.predict(source=str(args.input), save=True, **run_options)
+        model.predict(source=str(args.input), save=True, imgsz=args.imgsz, device=args.device, **run_options)
         print(f"Annotated predictions saved under {args.output_dir}")
         return 0
 
@@ -75,7 +80,7 @@ def main(argv: list[str] | None = None) -> int:
             if not artifact.is_file() or digest(artifact) != record[hash_key]:
                 raise SystemExit('Test artifact differs from split manifest: ' + str(artifact))
     metrics = model.val(data=str(args.data), split="test", imgsz=args.imgsz,
-                        plots=True, **run_options)
+                        plots=True, batch=args.batch, device=args.device, **run_options)
     summary = {
         "model": args.model.name,
         "model_sha256": digest(args.model),
@@ -83,10 +88,13 @@ def main(argv: list[str] | None = None) -> int:
         "test_images": len(test_records),
         "test_groups": sorted({record['group'] for record in test_records}),
         "ultralytics_version": importlib.metadata.version('ultralytics'),
-        "dataset": "grouped/data.yaml",
+        "dataset": args.data.name,
         "split": "test",
         "imgsz": args.imgsz,
+        "batch": args.batch,
+        "device": args.device,
         "per_class": metrics.summary(),
+        "speed_ms_per_image": getattr(metrics, "speed", {}),
         "box_precision": float(metrics.box.mp),
         "box_recall": float(metrics.box.mr),
         "box_map50": float(metrics.box.map50),

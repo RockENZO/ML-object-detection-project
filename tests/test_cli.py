@@ -33,6 +33,7 @@ class CliTests(unittest.TestCase):
         self.yolo.return_value.names = {0:"ball",1:"goalkeeper",2:"player",3:"referee"}
         self.yolo.return_value.val.return_value.box = types.SimpleNamespace(
             mp=0.7, mr=0.8, map50=0.75, map=0.6)
+        self.yolo.return_value.val.return_value.speed = {}
         original = sys.modules.get("ultralytics")
         sys.modules["ultralytics"] = types.SimpleNamespace(YOLO=self.yolo)
         self.addCleanup(lambda: sys.modules.pop("ultralytics", None)
@@ -44,7 +45,7 @@ class CliTests(unittest.TestCase):
             "--model", str(self.model), "predict", "--input", str(self.video),
             "--output-dir", str(output)]))
         self.yolo.return_value.predict.assert_called_once_with(
-            source=str(self.video), save=True, project=str(output.parent),
+            source=str(self.video), save=True, imgsz=640, device="cpu", project=str(output.parent),
             name=output.name, exist_ok=True)
 
     @patch("importlib.metadata.version", return_value="test-runtime")
@@ -54,7 +55,7 @@ class CliTests(unittest.TestCase):
             "--model", str(self.model), "evaluate", "--data", str(self.data),
             "--output-dir", str(output)]))
         self.yolo.return_value.val.assert_called_once_with(
-            data=str(self.data), split="test", imgsz=640, plots=True,
+            data=str(self.data), split="test", imgsz=640, plots=True, batch=4, device="cpu",
             project=str(output.parent), name=output.name, exist_ok=True)
         report = json.loads((output / "metrics.json").read_text(encoding="utf-8"))
         self.assertEqual(report["box_precision"], 0.7)

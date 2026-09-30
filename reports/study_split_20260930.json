@@ -1,0 +1,70 @@
+{
+  "counts": {
+    "quarantine": 64,
+    "test": 135,
+    "train": 342,
+    "val": 122
+  },
+  "final_groups": [
+    "08fd33",
+    "42ba34"
+  ],
+  "groups": {
+    "08fd33": "test",
+    "121364": "train",
+    "2e57b9": "train",
+    "40cd38": "train",
+    "42ba34": "test",
+    "4b770a": "train",
+    "538438": "val",
+    "54745b": "quarantine",
+    "55c9d1": "quarantine",
+    "573e61": "train",
+    "744b27": "train",
+    "798b45": "train",
+    "a9f16c": "val",
+    "c01561": "quarantine",
+    "cd987c": "val"
+  },
+  "limitations": [
+    "Filename-prefix video identities remain provisional; distinct IDs may share scenes."
+  ],
+  "names": [
+    "ball",
+    "goalkeeper",
+    "player",
+    "referee"
+  ],
+  "previous_manifest_sha256": "877ff10bc3d807d6ded61064d2bcadcedc877218fb122e75fcb366d67c5b1fca",
+  "protocol": "new final holdout from former training groups; prior tested groups quarantined",
+  "seed": 20260930,
+  "selection": "Use validation only; train fresh from COCO, never former trained weights",
+  "manifest_sha256": "170d283fb4e2f2d4f6d14ea14f68df629ac5d4ba1310c5ebdca0786cc8e53756",
+  "class_annotations": {
+    "train": {
+      "goalkeeper": 231,
+      "player": 6833,
+      "referee": 777,
+      "ball": 280
+    },
+    "val": {
+      "referee": 295,
+      "player": 2437,
+      "ball": 112,
+      "goalkeeper": 95
+    },
+    "test": {
+      "referee": 323,
+      "player": 2695,
+      "goalkeeper": 96,
+      "ball": 112
+    }
+  },
+  "augmentation": {
+    "policy": "one native 640-pixel ball-centred crop per eligible training frame; retain full frame; >=70% visibility",
+    "seed": 42,
+    "crops": 280,
+    "manifest_sha256": "d534c650afcd991fce4c1874f729f09f8759dac83b3d7b6e6741399ab9143c97"
+  },
+  "augmented_training_images": 622
+}
