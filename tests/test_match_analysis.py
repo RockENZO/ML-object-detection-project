@@ -669,5 +669,117 @@ class DetectionStateTests(unittest.TestCase):
             self.assertEqual(boxes[boxes[:, 5] == 0, 0].tolist(), [20])
 
 
+class AutomaticControlTests(unittest.TestCase):
+    def test_teammates_do_not_break_control_and_only_opponent_change_emits(self):
+        controller = Possession()
+        for i in range(11):
+            ps = [
+                {"id": str(i), "team": "A", "xy": [0, 0], "observation": "observed"},
+                {"id": "other", "team": "A", "xy": [0.2, 0], "observation": "observed"},
+            ]
+            team, event = controller.update(i / 10, [0, 0], ps, True)
+        self.assertEqual(team, "A")
+        self.assertIsNone(event)
+        for i in range(11, 17):
+            team, event = controller.update(i / 10, [0, 0], people("B", (0, 0)), True)
+        self.assertEqual(team, "B")
+        self.assertEqual(event["method"], "observed_stable_team_colour_change")
+        self.assertAlmostEqual(event["timestamp"], 1.1)
+        self.assertAlmostEqual(event["confirmed_at"], 1.6)
+
+    def test_opponent_or_unknown_contender_abstains_referee_is_not_controller(self):
+        c = Possession()
+        for rival in ("B", None):
+            ps = people("A", (0, 0)) + people(rival, (0.2, 0))
+            self.assertEqual(c.update(0, [0, 0], ps, True)[0], "unknown")
+            self.assertEqual(c.evidence["reason"], "contested_between_teams")
+        ps = people("A", (0.3, 0)) + [{**people(None, (0, 0))[0], "role": "referee"}]
+        for i in range(7):
+            team, _ = c.update(i / 10, [0, 0], ps, True)
+        self.assertEqual(team, "A")
+        self.assertEqual(c.update(0.7, [float("nan"), 0], ps, True)[0], "unknown")
+
+    def test_airborne_heuristic_ignores_unrelated_foreground_head(self):
+        from match_analysis.vision import airborne_uncertainty
+
+        ps = [{"bbox": [10, 100, 30, 200], "observation": "observed"}]
+        self.assertFalse(airborne_uncertainty([20, 30], ps))
+        self.assertTrue(airborne_uncertainty([20, 120], ps))
+        self.assertFalse(airborne_uncertainty([20, 195], ps))
+        ps[0]["observation"] = "predicted"
+        self.assertFalse(airborne_uncertainty([20, 120], ps))
+
+    def test_control_reprocessing_preserves_observations_and_exports_real_event_schema(
+        self,
+    ):
+        from match_analysis.control import recompute
+        from match_analysis.hashing import digest
+
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "source"
+            (source / "shots").mkdir(parents=True)
+            (source / "checkpoint.json").write_text(json.dumps({"complete": True}))
+            (source / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "video_end": 3.1,
+                        "signature": {"config": Config().as_dict(), "metadata": {}},
+                    }
+                )
+            )
+            records = []
+            for i in range(31):
+                team = "A" if i <= 10 else "B"
+                ps = [
+                    {
+                        "id": team,
+                        "role": "player",
+                        "team": team,
+                        "xy": [0, 0],
+                        "bbox": [0, 0, 10, 20],
+                        "observation": "observed",
+                        "confidence": 0.9,
+                    }
+                ]
+                records.append(
+                    {
+                        "frame_index": i,
+                        "timestamp": i / 10,
+                        "shot": 0,
+                        "eligible": True,
+                        "people": ps,
+                        "ball": {"xy": [0, 0], "observation": "observed"},
+                        "possession": "unknown",
+                        "event": None,
+                    }
+                )
+            shot = source / "shots/000000.jsonl"
+            shot.write_text("".join(json.dumps(f) + "\n" for f in records))
+            before = digest(shot)
+            output = Path(tmp) / "derived"
+            result = recompute(source, output)
+            self.assertEqual(result["possession_changes"], 1)
+            self.assertEqual(digest(shot), before)
+            actual = [
+                json.loads(s)
+                for s in (output / "shots/000000.jsonl").read_text().splitlines()
+            ]
+            self.assertEqual(
+                [f["people"] for f in actual], [f["people"] for f in records]
+            )
+            self.assertEqual([f["ball"] for f in actual], [f["ball"] for f in records])
+            self.assertIn(
+                "observed_stable_team_colour_change",
+                (output / "events.csv").read_text(),
+            )
+            self.assertFalse(
+                json.loads((output / "possession_diagnostics.json").read_text())[
+                    "runtime_human_input_required"
+                ]
+            )
+            with self.assertRaises(ValueError):
+                recompute(source, output)
+
+
 if __name__ == "__main__":
     unittest.main()

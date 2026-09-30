@@ -1,0 +1,1041 @@
+{
+  "date": "2026-09-30",
+  "runtime_human_input_required": false,
+  "status": "experimental",
+  "method": "Observed ball proximity determines candidate controlling team. Compare stable team colours after 0.5 seconds; same-team nearby players do not create team ambiguity.",
+  "scope": "Automatic control iteration on previously processed real observations. No new untouched final benchmark or event ground truth.",
+  "comparisons": {
+    "validation": {
+      "source_summary": {
+        "schema_version": 1,
+        "status": "experimental",
+        "sampled_frames": 300,
+        "durations": {
+          "sampled_seconds": 30.0,
+          "eligible_seconds": 25.080000000000002
+        },
+        "unknown_eligible_seconds": 25.080000000000002,
+        "excluded_seconds": 4.919999999999998,
+        "possession_coverage": 0.0,
+        "eligible_fraction": 0.8360000000000001,
+        "observed_possession_percent": {
+          "A": null,
+          "B": null
+        },
+        "zone_occupancy_seconds": {
+          "A": {},
+          "B": {}
+        },
+        "player_zone_observation_seconds": {
+          "A": {
+            "1": 139.56000000000074,
+            "0": 11.2,
+            "2": 15.839999999999993
+          },
+          "B": {
+            "1": 81.51999999999998,
+            "0": 3.16,
+            "2": 31.64
+          }
+        },
+        "possession_changes": 0,
+        "track_observation_counts": {
+          "observed": 4688,
+          "predicted": 718
+        },
+        "team_names": {
+          "A": "Team A",
+          "B": "Team B"
+        },
+        "limitations": [
+          "Wide/replay segmentation and airborne filtering are heuristics pending independent validation.",
+          "Possession is proximity-based estimated control; possession changes are not official tackles or turnovers.",
+          "IDs are shot-local; offscreen players and predicted points are not statistical observations.",
+          "Pitch dimensions are assumed unless supplied; no full-match official statistics are inferred."
+        ]
+      },
+      "updated_summary": {
+        "schema_version": 1,
+        "status": "experimental",
+        "sampled_frames": 300,
+        "durations": {
+          "sampled_seconds": 30.0,
+          "eligible_seconds": 25.080000000000002
+        },
+        "unknown_eligible_seconds": 25.080000000000002,
+        "excluded_seconds": 4.919999999999998,
+        "possession_coverage": 0.0,
+        "eligible_fraction": 0.8360000000000001,
+        "observed_possession_percent": {
+          "A": null,
+          "B": null
+        },
+        "zone_occupancy_seconds": {
+          "A": {},
+          "B": {}
+        },
+        "player_zone_observation_seconds": {
+          "A": {
+            "1": 139.56000000000074,
+            "0": 11.2,
+            "2": 15.839999999999993
+          },
+          "B": {
+            "1": 81.51999999999998,
+            "0": 3.16,
+            "2": 31.64
+          }
+        },
+        "possession_changes": 0,
+        "track_observation_counts": {
+          "observed": 4688,
+          "predicted": 718
+        },
+        "team_names": {
+          "A": "Team A",
+          "B": "Team B"
+        },
+        "limitations": [
+          "Wide/replay segmentation and airborne filtering are heuristics pending independent validation.",
+          "Possession is proximity-based estimated control; possession changes are not official tackles or turnovers.",
+          "IDs are shot-local; offscreen players and predicted points are not statistical observations.",
+          "Pitch dimensions are assumed unless supplied; no full-match official statistics are inferred."
+        ]
+      },
+      "diagnostics": {
+        "schema_version": 1,
+        "runtime_human_input_required": false,
+        "method": "Compare stable observed controlling-team colour assignments; teammates do not create team ambiguity.",
+        "reason_seconds": {
+          "nearest_player_team_unknown": 0.56,
+          "missing_observed_ball": 19.040000000000003,
+          "excluded_interval": 4.92,
+          "ball_outside_control_radius": 3.16,
+          "airborne_ball_uncertainty": 0.11999999999999922,
+          "awaiting_team_persistence": 2.1199999999999957,
+          "contested_between_teams": 0.08000000000000185
+        },
+        "longest_contiguous_observed_ball_seconds": 0.9199999999999982,
+        "required_control_persistence_seconds": 0.5,
+        "accuracy_validated": false
+      },
+      "provenance": {
+        "schema_version": 1,
+        "signature": {
+          "runtime_versions": {
+            "torch": "2.14.0",
+            "torchvision": "0.29.0",
+            "ultralytics": "8.3.200",
+            "numpy": "2.5.3",
+            "scipy": "1.18.1",
+            "opencv-python": "5.0.0.93",
+            "lap": "0.5.12",
+            "shapely": "2.1.2",
+            "lsq-ellipse": "2.2.1"
+          },
+          "video_sha256": "1614f3b442d45a01fb3081594454bcde0020ee1d36496f617280cfc66cafdccf",
+          "model_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+          "ball_model_sha256": "8ab112dc0c7f0cc00c433675465e3def7a9e15386f20f71dffe28c997960d14f",
+          "config": {
+            "ball_tiling": true,
+            "ball_tile_size": 640,
+            "ball_confidence": 0.6,
+            "ball_acquire_confidence": 0.75,
+            "detector_confidence": 0.1,
+            "tracker_high_thresh": 0.15,
+            "tracker_low_thresh": 0.1,
+            "tracker_new_thresh": 0.25,
+            "tracker_buffer": 90,
+            "tracker_fuse_score": false,
+            "sample_hz": 10.0,
+            "imgsz": 1280,
+            "pitch_length": 105.0,
+            "pitch_width": 68.0,
+            "calibration_hz": 2.0,
+            "max_reprojection_px": 8.0,
+            "prediction_seconds": 1.0,
+            "possession_persistence": 0.5,
+            "possession_radius_m": 2.5,
+            "ambiguity_margin_m": 1.0,
+            "max_ball_speed_mps": 40.0,
+            "team_margin": 0.15,
+            "cut_threshold": 0.55,
+            "grass_fraction": 0.2,
+            "min_players": 6,
+            "pressure_window": 30.0,
+            "replay_distance": 3,
+            "replay_confirm_samples": 10
+          },
+          "metadata": {},
+          "max_seconds": null,
+          "device": "mps",
+          "code_hashes": {
+            "__init__.py": "d6f40bda63fc3be7432ca9d3cba5f7894093ee8f45b08d42150eac6bf86857d7",
+            "__main__.py": "c87f92d34dc9abf6bf4e129c45353dc48e0cdf77822171d72a650d593e003ffe",
+            "annotations.py": "d5dce2579aa87c54926df22fb25b341c888a999c616d11c6bce383394c36620f",
+            "calibration.py": "1eb91bb43e488a675da854a3edd810a2b6edc47591eaf89b7e3e6fe1aac28f25",
+            "coaching.py": "490265fe6396c9f0a7e5455964c9ff4162bd7a27310ba8c3f54eb58ed06ece2f",
+            "config.py": "f240e694b908e5bb8b7540be48751d38c98011a2f00b7c37da460b09aab53dc7",
+            "detection.py": "3bc3b1146112ecbcf44881f5b90ac18aa5bfd190441fc33f443f83ce88e8dfc7",
+            "evaluation.py": "e1f8abb491c3b43555d89f678e55c9f3a505eb94f5d0f8d7d009a5dac0026ee5",
+            "hashing.py": "85a01f49680a8bdcb45c963f2b4ca1c7a8914950157ee13ba5a956705638e384",
+            "media.py": "ee254b027bfac74330a6541721d176fa54b86973371d8e87383aba9bfd1dd745",
+            "pipeline.py": "d17227fcf1eff0ed1a57de6b9ec947d1814b53d4cd3aad439fcb917148caa94e",
+            "pnl_worker.py": "971dfaeea28e1aa6a9a0175a57050ca91d396c23d5751ec7d452fb049c8c4b47",
+            "state.py": "7f46bc24e33328ba59327a197fc06de40a38aec694a8cd13ea6d3d775e95b845",
+            "summary.py": "c0ec161a2970a8f8b83ee621ce688330d637fbf183145d63fd2e91d3cf67570a",
+            "vision.py": "31ec3b7f70ed2da6a119d27be9afa2a5f82258d51956db611a43415c9f85c004"
+          },
+          "pitch_assets_sha256": "6269be71ea3fbc4c369b4e66369feabe202c73b23399fe6424e88705752e5ad6"
+        },
+        "video": "/Users/rockingmac/Documents/Codex/2026-09-29/i-2/work/repos/ML-object-detection-project/artifacts/gsr-v2/SNGS-041.mp4",
+        "video_end": 30.0,
+        "fps": 25.0,
+        "runtime": {
+          "python": "3.12.13",
+          "torch": "2.14.0",
+          "ultralytics": "8.3.200",
+          "platform": "macOS-27.2-arm64-arm-64bit",
+          "packages": {
+            "torch": "2.14.0",
+            "torchvision": "0.29.0",
+            "ultralytics": "8.3.200",
+            "numpy": "2.5.3",
+            "scipy": "1.18.1",
+            "opencv-python": "5.0.0.93",
+            "lap": "0.5.12",
+            "shapely": "2.1.2",
+            "lsq-ellipse": "2.2.1"
+          },
+          "hardware": "arm64"
+        },
+        "status": "experimental",
+        "segmentation": "HSV scene cuts + grass/person wide view + repeated visual content replay candidates; no trained replay classifier",
+        "processed_samples": 300,
+        "compute_seconds": 0.11513991700485349,
+        "processed_samples_per_compute_second": null,
+        "analysis_stage": "automatic_control_reprocessing",
+        "airborne_heuristic_refreshed": true,
+        "source_run": "/Users/rockingmac/Documents/Codex/2026-09-29/i-2/work/repos/ML-object-detection-project/artifacts/coach-validation-hybrid",
+        "source_artifact_sha256": {
+          "manifest.json": "eadeb143bfe82d51d0cdec1272bdfd428609430236c3489d940056440c69c403",
+          "checkpoint.json": "373a946758fb9fad734874a7892b80d1d4f20b9bbd6f00e9ddbef623dec75c0c",
+          "shots/000000.jsonl": "f7ff856aeb1180a580d4d79c766d3ae69fb06a9289bc456a255c57dd5a4760a9"
+        },
+        "source_detection_calibration_signature": {
+          "runtime_versions": {
+            "torch": "2.14.0",
+            "torchvision": "0.29.0",
+            "ultralytics": "8.3.200",
+            "numpy": "2.5.3",
+            "scipy": "1.18.1",
+            "opencv-python": "5.0.0.93",
+            "lap": "0.5.12",
+            "shapely": "2.1.2",
+            "lsq-ellipse": "2.2.1"
+          },
+          "video_sha256": "1614f3b442d45a01fb3081594454bcde0020ee1d36496f617280cfc66cafdccf",
+          "model_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+          "ball_model_sha256": "8ab112dc0c7f0cc00c433675465e3def7a9e15386f20f71dffe28c997960d14f",
+          "config": {
+            "ball_tiling": true,
+            "ball_tile_size": 640,
+            "ball_confidence": 0.6,
+            "ball_acquire_confidence": 0.75,
+            "detector_confidence": 0.1,
+            "tracker_high_thresh": 0.15,
+            "tracker_low_thresh": 0.1,
+            "tracker_new_thresh": 0.25,
+            "tracker_buffer": 90,
+            "tracker_fuse_score": false,
+            "sample_hz": 10.0,
+            "imgsz": 1280,
+            "pitch_length": 105.0,
+            "pitch_width": 68.0,
+            "calibration_hz": 2.0,
+            "max_reprojection_px": 8.0,
+            "prediction_seconds": 1.0,
+            "possession_persistence": 0.5,
+            "possession_radius_m": 2.5,
+            "ambiguity_margin_m": 1.0,
+            "max_ball_speed_mps": 40.0,
+            "team_margin": 0.15,
+            "cut_threshold": 0.55,
+            "grass_fraction": 0.2,
+            "min_players": 6,
+            "pressure_window": 30.0,
+            "replay_distance": 3,
+            "replay_confirm_samples": 10
+          },
+          "metadata": {},
+          "max_seconds": null,
+          "device": "mps",
+          "code_hashes": {
+            "__init__.py": "d6f40bda63fc3be7432ca9d3cba5f7894093ee8f45b08d42150eac6bf86857d7",
+            "__main__.py": "c87f92d34dc9abf6bf4e129c45353dc48e0cdf77822171d72a650d593e003ffe",
+            "annotations.py": "d5dce2579aa87c54926df22fb25b341c888a999c616d11c6bce383394c36620f",
+            "calibration.py": "1eb91bb43e488a675da854a3edd810a2b6edc47591eaf89b7e3e6fe1aac28f25",
+            "coaching.py": "490265fe6396c9f0a7e5455964c9ff4162bd7a27310ba8c3f54eb58ed06ece2f",
+            "config.py": "f240e694b908e5bb8b7540be48751d38c98011a2f00b7c37da460b09aab53dc7",
+            "detection.py": "3bc3b1146112ecbcf44881f5b90ac18aa5bfd190441fc33f443f83ce88e8dfc7",
+            "evaluation.py": "e1f8abb491c3b43555d89f678e55c9f3a505eb94f5d0f8d7d009a5dac0026ee5",
+            "hashing.py": "85a01f49680a8bdcb45c963f2b4ca1c7a8914950157ee13ba5a956705638e384",
+            "media.py": "ee254b027bfac74330a6541721d176fa54b86973371d8e87383aba9bfd1dd745",
+            "pipeline.py": "d17227fcf1eff0ed1a57de6b9ec947d1814b53d4cd3aad439fcb917148caa94e",
+            "pnl_worker.py": "971dfaeea28e1aa6a9a0175a57050ca91d396c23d5751ec7d452fb049c8c4b47",
+            "state.py": "7f46bc24e33328ba59327a197fc06de40a38aec694a8cd13ea6d3d775e95b845",
+            "summary.py": "c0ec161a2970a8f8b83ee621ce688330d637fbf183145d63fd2e91d3cf67570a",
+            "vision.py": "31ec3b7f70ed2da6a119d27be9afa2a5f82258d51956db611a43415c9f85c004"
+          },
+          "pitch_assets_sha256": "6269be71ea3fbc4c369b4e66369feabe202c73b23399fe6424e88705752e5ad6"
+        },
+        "control_code_sha256": {
+          "control.py": "1ba9a1ab381e96ea70242ff98f4a5563f5621022593a6d2f324465676708a998",
+          "state.py": "704b9ce019596491a747e10934337c5c8cd693e77e52bf8773ecc1b1d39589e9",
+          "vision.py": "a2c748f59d58e29990af066e8f1c653df5d660d84f599909acf30a1d4364095f"
+        },
+        "throughput_scope": "CPU control reprocessing only; not detector/calibration or cloud throughput"
+      }
+    },
+    "previously_seen_regression": {
+      "source_summary": {
+        "schema_version": 1,
+        "status": "experimental",
+        "sampled_frames": 300,
+        "durations": {
+          "sampled_seconds": 30.0,
+          "eligible_seconds": 27.319999999999997,
+          "A": 0.879999999999999
+        },
+        "unknown_eligible_seconds": 26.439999999999998,
+        "excluded_seconds": 2.6800000000000033,
+        "possession_coverage": 0.03221083455344067,
+        "eligible_fraction": 0.9106666666666665,
+        "observed_possession_percent": {
+          "A": 100.0,
+          "B": 0.0
+        },
+        "zone_occupancy_seconds": {
+          "A": {
+            "2": 0.879999999999999
+          },
+          "B": {}
+        },
+        "player_zone_observation_seconds": {
+          "A": {
+            "2": 82.84000000000012,
+            "1": 25.759999999999987
+          },
+          "B": {
+            "2": 46.23999999999991,
+            "1": 64.2800000000001
+          }
+        },
+        "possession_changes": 0,
+        "track_observation_counts": {
+          "observed": 3997,
+          "predicted": 874
+        },
+        "team_names": {
+          "A": "Team A",
+          "B": "Team B"
+        },
+        "limitations": [
+          "Wide/replay segmentation and airborne filtering are heuristics pending independent validation.",
+          "Possession is proximity-based estimated control; possession changes are not official tackles or turnovers.",
+          "IDs are shot-local; offscreen players and predicted points are not statistical observations.",
+          "Pitch dimensions are assumed unless supplied; no full-match official statistics are inferred."
+        ]
+      },
+      "updated_summary": {
+        "schema_version": 1,
+        "status": "experimental",
+        "sampled_frames": 300,
+        "durations": {
+          "sampled_seconds": 30.0,
+          "eligible_seconds": 27.319999999999997,
+          "A": 0.879999999999999
+        },
+        "unknown_eligible_seconds": 26.439999999999998,
+        "excluded_seconds": 2.6800000000000033,
+        "possession_coverage": 0.03221083455344067,
+        "eligible_fraction": 0.9106666666666665,
+        "observed_possession_percent": {
+          "A": 100.0,
+          "B": 0.0
+        },
+        "zone_occupancy_seconds": {
+          "A": {
+            "2": 0.879999999999999
+          },
+          "B": {}
+        },
+        "player_zone_observation_seconds": {
+          "A": {
+            "2": 82.84000000000012,
+            "1": 25.759999999999987
+          },
+          "B": {
+            "2": 46.23999999999991,
+            "1": 64.2800000000001
+          }
+        },
+        "possession_changes": 0,
+        "track_observation_counts": {
+          "observed": 3997,
+          "predicted": 874
+        },
+        "team_names": {
+          "A": "Team A",
+          "B": "Team B"
+        },
+        "limitations": [
+          "Wide/replay segmentation and airborne filtering are heuristics pending independent validation.",
+          "Possession is proximity-based estimated control; possession changes are not official tackles or turnovers.",
+          "IDs are shot-local; offscreen players and predicted points are not statistical observations.",
+          "Pitch dimensions are assumed unless supplied; no full-match official statistics are inferred."
+        ]
+      },
+      "diagnostics": {
+        "schema_version": 1,
+        "runtime_human_input_required": false,
+        "method": "Compare stable observed controlling-team colour assignments; teammates do not create team ambiguity.",
+        "reason_seconds": {
+          "missing_observed_ball": 14.760000000000007,
+          "excluded_interval": 2.6800000000000033,
+          "ball_outside_control_radius": 5.560000000000002,
+          "airborne_ball_uncertainty": 1.0400000000000027,
+          "contested_between_teams": 1.0799999999999947,
+          "awaiting_team_persistence": 1.7199999999999918,
+          "nearest_player_team_unknown": 2.2799999999999994,
+          "stable_observed_team_control": 0.879999999999999
+        },
+        "longest_contiguous_observed_ball_seconds": 3.1999999999999993,
+        "required_control_persistence_seconds": 0.5,
+        "accuracy_validated": false
+      },
+      "provenance": {
+        "schema_version": 1,
+        "signature": {
+          "runtime_versions": {
+            "torch": "2.14.0",
+            "torchvision": "0.29.0",
+            "ultralytics": "8.3.200",
+            "numpy": "2.5.3",
+            "scipy": "1.18.1",
+            "opencv-python": "5.0.0.93",
+            "lap": "0.5.12",
+            "shapely": "2.1.2",
+            "lsq-ellipse": "2.2.1"
+          },
+          "video_sha256": "c1266db6c809584221e231c1700ae2d404e1685936a0d7bdf24dcea4dc4afc69",
+          "model_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+          "ball_model_sha256": "8ab112dc0c7f0cc00c433675465e3def7a9e15386f20f71dffe28c997960d14f",
+          "config": {
+            "ball_tiling": true,
+            "ball_tile_size": 640,
+            "ball_confidence": 0.6,
+            "ball_acquire_confidence": 0.75,
+            "detector_confidence": 0.1,
+            "tracker_high_thresh": 0.15,
+            "tracker_low_thresh": 0.1,
+            "tracker_new_thresh": 0.25,
+            "tracker_buffer": 90,
+            "tracker_fuse_score": false,
+            "sample_hz": 10.0,
+            "imgsz": 1280,
+            "pitch_length": 105.0,
+            "pitch_width": 68.0,
+            "calibration_hz": 2.0,
+            "max_reprojection_px": 8.0,
+            "prediction_seconds": 1.0,
+            "possession_persistence": 0.5,
+            "possession_radius_m": 2.5,
+            "ambiguity_margin_m": 1.0,
+            "max_ball_speed_mps": 40.0,
+            "team_margin": 0.15,
+            "cut_threshold": 0.55,
+            "grass_fraction": 0.2,
+            "min_players": 6,
+            "pressure_window": 30.0,
+            "replay_distance": 3,
+            "replay_confirm_samples": 10
+          },
+          "metadata": {},
+          "max_seconds": null,
+          "device": "mps",
+          "code_hashes": {
+            "__init__.py": "d6f40bda63fc3be7432ca9d3cba5f7894093ee8f45b08d42150eac6bf86857d7",
+            "__main__.py": "c87f92d34dc9abf6bf4e129c45353dc48e0cdf77822171d72a650d593e003ffe",
+            "annotations.py": "d5dce2579aa87c54926df22fb25b341c888a999c616d11c6bce383394c36620f",
+            "calibration.py": "1eb91bb43e488a675da854a3edd810a2b6edc47591eaf89b7e3e6fe1aac28f25",
+            "coaching.py": "490265fe6396c9f0a7e5455964c9ff4162bd7a27310ba8c3f54eb58ed06ece2f",
+            "config.py": "f240e694b908e5bb8b7540be48751d38c98011a2f00b7c37da460b09aab53dc7",
+            "detection.py": "3bc3b1146112ecbcf44881f5b90ac18aa5bfd190441fc33f443f83ce88e8dfc7",
+            "evaluation.py": "e1f8abb491c3b43555d89f678e55c9f3a505eb94f5d0f8d7d009a5dac0026ee5",
+            "hashing.py": "85a01f49680a8bdcb45c963f2b4ca1c7a8914950157ee13ba5a956705638e384",
+            "media.py": "ee254b027bfac74330a6541721d176fa54b86973371d8e87383aba9bfd1dd745",
+            "pipeline.py": "d17227fcf1eff0ed1a57de6b9ec947d1814b53d4cd3aad439fcb917148caa94e",
+            "pnl_worker.py": "971dfaeea28e1aa6a9a0175a57050ca91d396c23d5751ec7d452fb049c8c4b47",
+            "state.py": "7f46bc24e33328ba59327a197fc06de40a38aec694a8cd13ea6d3d775e95b845",
+            "summary.py": "c0ec161a2970a8f8b83ee621ce688330d637fbf183145d63fd2e91d3cf67570a",
+            "vision.py": "31ec3b7f70ed2da6a119d27be9afa2a5f82258d51956db611a43415c9f85c004"
+          },
+          "pitch_assets_sha256": "6269be71ea3fbc4c369b4e66369feabe202c73b23399fe6424e88705752e5ad6"
+        },
+        "video": "/Users/rockingmac/Documents/Codex/2026-09-29/i-2/work/repos/ML-object-detection-project/artifacts/gsr-v2/SNGS-079.mp4",
+        "video_end": 30.0,
+        "fps": 25.0,
+        "runtime": {
+          "python": "3.12.13",
+          "torch": "2.14.0",
+          "ultralytics": "8.3.200",
+          "platform": "macOS-27.2-arm64-arm-64bit",
+          "packages": {
+            "torch": "2.14.0",
+            "torchvision": "0.29.0",
+            "ultralytics": "8.3.200",
+            "numpy": "2.5.3",
+            "scipy": "1.18.1",
+            "opencv-python": "5.0.0.93",
+            "lap": "0.5.12",
+            "shapely": "2.1.2",
+            "lsq-ellipse": "2.2.1"
+          },
+          "hardware": "arm64"
+        },
+        "status": "experimental",
+        "segmentation": "HSV scene cuts + grass/person wide view + repeated visual content replay candidates; no trained replay classifier",
+        "processed_samples": 300,
+        "compute_seconds": 0.05766074999701232,
+        "processed_samples_per_compute_second": null,
+        "analysis_stage": "automatic_control_reprocessing",
+        "source_run": "/Users/rockingmac/Documents/Codex/2026-09-29/i-2/work/repos/ML-object-detection-project/artifacts/coach-evaluation-hybrid",
+        "source_artifact_sha256": {
+          "manifest.json": "bb54b92e2744543bc018515bbb92dba7bc3f6b77a664a785ce094bd050b39b1d",
+          "checkpoint.json": "35612ea7ab30e642f358dc2800ea41b04810f7ce19697357803cddf62e4901b3",
+          "shots/000000.jsonl": "702a5d93b65ebb3e79b9bccbd9da490e5d3d222ec80ab650d3adce71c6ede319"
+        },
+        "source_detection_calibration_signature": {
+          "runtime_versions": {
+            "torch": "2.14.0",
+            "torchvision": "0.29.0",
+            "ultralytics": "8.3.200",
+            "numpy": "2.5.3",
+            "scipy": "1.18.1",
+            "opencv-python": "5.0.0.93",
+            "lap": "0.5.12",
+            "shapely": "2.1.2",
+            "lsq-ellipse": "2.2.1"
+          },
+          "video_sha256": "c1266db6c809584221e231c1700ae2d404e1685936a0d7bdf24dcea4dc4afc69",
+          "model_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+          "ball_model_sha256": "8ab112dc0c7f0cc00c433675465e3def7a9e15386f20f71dffe28c997960d14f",
+          "config": {
+            "ball_tiling": true,
+            "ball_tile_size": 640,
+            "ball_confidence": 0.6,
+            "ball_acquire_confidence": 0.75,
+            "detector_confidence": 0.1,
+            "tracker_high_thresh": 0.15,
+            "tracker_low_thresh": 0.1,
+            "tracker_new_thresh": 0.25,
+            "tracker_buffer": 90,
+            "tracker_fuse_score": false,
+            "sample_hz": 10.0,
+            "imgsz": 1280,
+            "pitch_length": 105.0,
+            "pitch_width": 68.0,
+            "calibration_hz": 2.0,
+            "max_reprojection_px": 8.0,
+            "prediction_seconds": 1.0,
+            "possession_persistence": 0.5,
+            "possession_radius_m": 2.5,
+            "ambiguity_margin_m": 1.0,
+            "max_ball_speed_mps": 40.0,
+            "team_margin": 0.15,
+            "cut_threshold": 0.55,
+            "grass_fraction": 0.2,
+            "min_players": 6,
+            "pressure_window": 30.0,
+            "replay_distance": 3,
+            "replay_confirm_samples": 10
+          },
+          "metadata": {},
+          "max_seconds": null,
+          "device": "mps",
+          "code_hashes": {
+            "__init__.py": "d6f40bda63fc3be7432ca9d3cba5f7894093ee8f45b08d42150eac6bf86857d7",
+            "__main__.py": "c87f92d34dc9abf6bf4e129c45353dc48e0cdf77822171d72a650d593e003ffe",
+            "annotations.py": "d5dce2579aa87c54926df22fb25b341c888a999c616d11c6bce383394c36620f",
+            "calibration.py": "1eb91bb43e488a675da854a3edd810a2b6edc47591eaf89b7e3e6fe1aac28f25",
+            "coaching.py": "490265fe6396c9f0a7e5455964c9ff4162bd7a27310ba8c3f54eb58ed06ece2f",
+            "config.py": "f240e694b908e5bb8b7540be48751d38c98011a2f00b7c37da460b09aab53dc7",
+            "detection.py": "3bc3b1146112ecbcf44881f5b90ac18aa5bfd190441fc33f443f83ce88e8dfc7",
+            "evaluation.py": "e1f8abb491c3b43555d89f678e55c9f3a505eb94f5d0f8d7d009a5dac0026ee5",
+            "hashing.py": "85a01f49680a8bdcb45c963f2b4ca1c7a8914950157ee13ba5a956705638e384",
+            "media.py": "ee254b027bfac74330a6541721d176fa54b86973371d8e87383aba9bfd1dd745",
+            "pipeline.py": "d17227fcf1eff0ed1a57de6b9ec947d1814b53d4cd3aad439fcb917148caa94e",
+            "pnl_worker.py": "971dfaeea28e1aa6a9a0175a57050ca91d396c23d5751ec7d452fb049c8c4b47",
+            "state.py": "7f46bc24e33328ba59327a197fc06de40a38aec694a8cd13ea6d3d775e95b845",
+            "summary.py": "c0ec161a2970a8f8b83ee621ce688330d637fbf183145d63fd2e91d3cf67570a",
+            "vision.py": "31ec3b7f70ed2da6a119d27be9afa2a5f82258d51956db611a43415c9f85c004"
+          },
+          "pitch_assets_sha256": "6269be71ea3fbc4c369b4e66369feabe202c73b23399fe6424e88705752e5ad6"
+        },
+        "control_code_sha256": {
+          "control.py": "1e9bfb973b7a5046f6195bb407ad423817a28a62907f4ad1de02411ae5db625d",
+          "state.py": "704b9ce019596491a747e10934337c5c8cd693e77e52bf8773ecc1b1d39589e9"
+        },
+        "throughput_scope": "CPU control reprocessing only; not detector/calibration or cloud throughput"
+      }
+    },
+    "smoke_reprocessing": {
+      "source_summary": {
+        "schema_version": 1,
+        "status": "experimental",
+        "sampled_frames": 300,
+        "durations": {
+          "sampled_seconds": 30.0,
+          "eligible_seconds": 29.8,
+          "B": 0.40000000000000013
+        },
+        "unknown_eligible_seconds": 29.400000000000002,
+        "excluded_seconds": 0.1999999999999993,
+        "possession_coverage": 0.013422818791946314,
+        "eligible_fraction": 0.9933333333333334,
+        "observed_possession_percent": {
+          "A": 0.0,
+          "B": 100.0
+        },
+        "zone_occupancy_seconds": {
+          "A": {},
+          "B": {
+            "1": 0.40000000000000013
+          }
+        },
+        "player_zone_observation_seconds": {
+          "A": {
+            "2": 53.680000000000064,
+            "1": 188.12000000000228,
+            "0": 2.9200000000000017
+          },
+          "B": {
+            "1": 206.080000000003,
+            "2": 35.19999999999999,
+            "0": 14.28
+          }
+        },
+        "possession_changes": 0,
+        "track_observation_counts": {
+          "observed": 6979,
+          "predicted": 489
+        },
+        "team_names": {
+          "A": "Team A",
+          "B": "Team B"
+        },
+        "limitations": [
+          "Wide/replay segmentation and airborne filtering are heuristics pending independent validation.",
+          "Possession is proximity-based estimated control; possession changes are not official tackles or turnovers.",
+          "IDs are shot-local; offscreen players and predicted points are not statistical observations.",
+          "Pitch dimensions are assumed unless supplied; no full-match official statistics are inferred."
+        ]
+      },
+      "updated_summary": {
+        "schema_version": 1,
+        "status": "experimental",
+        "sampled_frames": 300,
+        "durations": {
+          "sampled_seconds": 30.0,
+          "eligible_seconds": 29.8,
+          "B": 0.9999999999999998
+        },
+        "unknown_eligible_seconds": 28.8,
+        "excluded_seconds": 0.1999999999999993,
+        "possession_coverage": 0.033557046979865765,
+        "eligible_fraction": 0.9933333333333334,
+        "observed_possession_percent": {
+          "A": 0.0,
+          "B": 100.0
+        },
+        "zone_occupancy_seconds": {
+          "A": {},
+          "B": {
+            "1": 0.9999999999999998
+          }
+        },
+        "player_zone_observation_seconds": {
+          "A": {
+            "2": 53.680000000000064,
+            "1": 188.12000000000228,
+            "0": 2.9200000000000017
+          },
+          "B": {
+            "1": 206.080000000003,
+            "2": 35.19999999999999,
+            "0": 14.28
+          }
+        },
+        "possession_changes": 0,
+        "track_observation_counts": {
+          "observed": 6979,
+          "predicted": 489
+        },
+        "team_names": {
+          "A": "Team A",
+          "B": "Team B"
+        },
+        "limitations": [
+          "Wide/replay segmentation and airborne filtering are heuristics pending independent validation.",
+          "Possession is proximity-based estimated control; possession changes are not official tackles or turnovers.",
+          "IDs are shot-local; offscreen players and predicted points are not statistical observations.",
+          "Pitch dimensions are assumed unless supplied; no full-match official statistics are inferred."
+        ]
+      },
+      "diagnostics": {
+        "schema_version": 1,
+        "runtime_human_input_required": false,
+        "method": "Compare stable observed controlling-team colour assignments; teammates do not create team ambiguity.",
+        "reason_seconds": {
+          "ball_outside_control_radius": 12.16000000000001,
+          "nearest_player_team_unknown": 6.919999999999999,
+          "awaiting_team_persistence": 3.9599999999999858,
+          "missing_observed_ball": 5.240000000000002,
+          "stable_observed_team_control": 0.9999999999999998,
+          "airborne_ball_uncertainty": 0.120000000000001,
+          "excluded_interval": 0.1999999999999993,
+          "contested_between_teams": 0.40000000000000213
+        },
+        "longest_contiguous_observed_ball_seconds": 3.8,
+        "required_control_persistence_seconds": 0.5,
+        "accuracy_validated": false
+      },
+      "provenance": {
+        "schema_version": 1,
+        "signature": {
+          "runtime_versions": {
+            "torch": "2.14.0",
+            "torchvision": "0.29.0",
+            "ultralytics": "8.3.200",
+            "numpy": "2.5.3",
+            "scipy": "1.18.1",
+            "opencv-python": "5.0.0.93",
+            "lap": "0.5.12",
+            "shapely": "2.1.2",
+            "lsq-ellipse": "2.2.1"
+          },
+          "video_sha256": "077985a55b61fe2ca413221c082711655b7ba736a3bbd8ff97b4dfc0e5b03c57",
+          "model_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+          "config": {
+            "sample_hz": 10.0,
+            "imgsz": 1280,
+            "pitch_length": 105.0,
+            "pitch_width": 68.0,
+            "calibration_hz": 2.0,
+            "max_reprojection_px": 8.0,
+            "prediction_seconds": 1.0,
+            "possession_persistence": 0.5,
+            "possession_radius_m": 2.5,
+            "ambiguity_margin_m": 1.0,
+            "max_ball_speed_mps": 40.0,
+            "team_margin": 0.15,
+            "cut_threshold": 0.55,
+            "grass_fraction": 0.2,
+            "min_players": 6,
+            "pressure_window": 30.0,
+            "replay_distance": 3,
+            "replay_confirm_samples": 10
+          },
+          "metadata": {},
+          "max_seconds": null,
+          "device": "mps",
+          "code_hashes": {
+            "__init__.py": "d6f40bda63fc3be7432ca9d3cba5f7894093ee8f45b08d42150eac6bf86857d7",
+            "__main__.py": "ffb24997aab0ce4ac5802bd49b34fe5ebf302247db21771bd1772beeed7b0943",
+            "calibration.py": "1eb91bb43e488a675da854a3edd810a2b6edc47591eaf89b7e3e6fe1aac28f25",
+            "config.py": "ed5b30eb3b6d5f54910decef22bf2e1fd625c0a8fe8180a170db688ceb5f5b99",
+            "evaluation.py": "ae7442bad3f925120c4685d94b6d7eae8641d0c801d61bfcae207d5c8185001d",
+            "hashing.py": "85a01f49680a8bdcb45c963f2b4ca1c7a8914950157ee13ba5a956705638e384",
+            "media.py": "ee254b027bfac74330a6541721d176fa54b86973371d8e87383aba9bfd1dd745",
+            "pipeline.py": "f494562ce53fb3457af237ac78bb4761123b1e657fab1e73a60c3d8df58a742a",
+            "pnl_worker.py": "971dfaeea28e1aa6a9a0175a57050ca91d396c23d5751ec7d452fb049c8c4b47",
+            "state.py": "c7847a8dafb4642e73c18e0a3898ae14e03b3ae293b1cceca5c8e46cd3923d50",
+            "summary.py": "c0ec161a2970a8f8b83ee621ce688330d637fbf183145d63fd2e91d3cf67570a",
+            "vision.py": "31ec3b7f70ed2da6a119d27be9afa2a5f82258d51956db611a43415c9f85c004"
+          },
+          "pitch_assets_sha256": "6269be71ea3fbc4c369b4e66369feabe202c73b23399fe6424e88705752e5ad6"
+        },
+        "video": "/Users/rockingmac/Documents/Codex/2026-09-29/i-2/work/repos/ML-object-detection-project/input_videos/08fd33_4.mp4",
+        "video_end": 30.0,
+        "fps": 25.0,
+        "runtime": {
+          "python": "3.12.13",
+          "torch": "2.14.0",
+          "ultralytics": "8.3.200",
+          "platform": "macOS-27.2-arm64-arm-64bit",
+          "packages": {
+            "torch": "2.14.0",
+            "torchvision": "0.29.0",
+            "ultralytics": "8.3.200",
+            "numpy": "2.5.3",
+            "scipy": "1.18.1",
+            "opencv-python": "5.0.0.93",
+            "lap": "0.5.12",
+            "shapely": "2.1.2",
+            "lsq-ellipse": "2.2.1"
+          },
+          "hardware": "arm64"
+        },
+        "status": "experimental",
+        "segmentation": "HSV scene cuts + grass/person wide view + repeated visual content replay candidates; no trained replay classifier",
+        "processed_samples": 300,
+        "compute_seconds": 0.13532150001265109,
+        "processed_samples_per_compute_second": null,
+        "analysis_stage": "automatic_control_reprocessing",
+        "airborne_heuristic_refreshed": true,
+        "source_run": "/Users/rockingmac/Documents/Codex/2026-09-29/i-2/work/repos/ML-object-detection-project/artifacts/release-smoke",
+        "source_artifact_sha256": {
+          "manifest.json": "d425a9e72af9fbdcad48c2d50514f57b28a7ac2a1f979d31d5fbb4573a5d1ebf",
+          "checkpoint.json": "79b4a5778f214f000a9c740dbf318691e9945436888eb7dd4496e8c803071704",
+          "shots/000000.jsonl": "cee6210d4c444eaa47681d62492f46b248e44f8d75260811d379479b8956a9f3"
+        },
+        "source_detection_calibration_signature": {
+          "runtime_versions": {
+            "torch": "2.14.0",
+            "torchvision": "0.29.0",
+            "ultralytics": "8.3.200",
+            "numpy": "2.5.3",
+            "scipy": "1.18.1",
+            "opencv-python": "5.0.0.93",
+            "lap": "0.5.12",
+            "shapely": "2.1.2",
+            "lsq-ellipse": "2.2.1"
+          },
+          "video_sha256": "077985a55b61fe2ca413221c082711655b7ba736a3bbd8ff97b4dfc0e5b03c57",
+          "model_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+          "config": {
+            "sample_hz": 10.0,
+            "imgsz": 1280,
+            "pitch_length": 105.0,
+            "pitch_width": 68.0,
+            "calibration_hz": 2.0,
+            "max_reprojection_px": 8.0,
+            "prediction_seconds": 1.0,
+            "possession_persistence": 0.5,
+            "possession_radius_m": 2.5,
+            "ambiguity_margin_m": 1.0,
+            "max_ball_speed_mps": 40.0,
+            "team_margin": 0.15,
+            "cut_threshold": 0.55,
+            "grass_fraction": 0.2,
+            "min_players": 6,
+            "pressure_window": 30.0,
+            "replay_distance": 3,
+            "replay_confirm_samples": 10
+          },
+          "metadata": {},
+          "max_seconds": null,
+          "device": "mps",
+          "code_hashes": {
+            "__init__.py": "d6f40bda63fc3be7432ca9d3cba5f7894093ee8f45b08d42150eac6bf86857d7",
+            "__main__.py": "ffb24997aab0ce4ac5802bd49b34fe5ebf302247db21771bd1772beeed7b0943",
+            "calibration.py": "1eb91bb43e488a675da854a3edd810a2b6edc47591eaf89b7e3e6fe1aac28f25",
+            "config.py": "ed5b30eb3b6d5f54910decef22bf2e1fd625c0a8fe8180a170db688ceb5f5b99",
+            "evaluation.py": "ae7442bad3f925120c4685d94b6d7eae8641d0c801d61bfcae207d5c8185001d",
+            "hashing.py": "85a01f49680a8bdcb45c963f2b4ca1c7a8914950157ee13ba5a956705638e384",
+            "media.py": "ee254b027bfac74330a6541721d176fa54b86973371d8e87383aba9bfd1dd745",
+            "pipeline.py": "f494562ce53fb3457af237ac78bb4761123b1e657fab1e73a60c3d8df58a742a",
+            "pnl_worker.py": "971dfaeea28e1aa6a9a0175a57050ca91d396c23d5751ec7d452fb049c8c4b47",
+            "state.py": "c7847a8dafb4642e73c18e0a3898ae14e03b3ae293b1cceca5c8e46cd3923d50",
+            "summary.py": "c0ec161a2970a8f8b83ee621ce688330d637fbf183145d63fd2e91d3cf67570a",
+            "vision.py": "31ec3b7f70ed2da6a119d27be9afa2a5f82258d51956db611a43415c9f85c004"
+          },
+          "pitch_assets_sha256": "6269be71ea3fbc4c369b4e66369feabe202c73b23399fe6424e88705752e5ad6"
+        },
+        "control_code_sha256": {
+          "control.py": "1ba9a1ab381e96ea70242ff98f4a5563f5621022593a6d2f324465676708a998",
+          "state.py": "704b9ce019596491a747e10934337c5c8cd693e77e52bf8773ecc1b1d39589e9",
+          "vision.py": "a2c748f59d58e29990af066e8f1c653df5d660d84f599909acf30a1d4364095f"
+        },
+        "throughput_scope": "CPU control reprocessing only; not detector/calibration or cloud throughput"
+      }
+    }
+  },
+  "full_pipeline_smoke": {
+    "summary": {
+      "schema_version": 1,
+      "status": "experimental",
+      "sampled_frames": 300,
+      "durations": {
+        "sampled_seconds": 30.0,
+        "eligible_seconds": 29.8,
+        "B": 0.40000000000000013
+      },
+      "unknown_eligible_seconds": 29.400000000000002,
+      "excluded_seconds": 0.1999999999999993,
+      "possession_coverage": 0.013422818791946314,
+      "eligible_fraction": 0.9933333333333334,
+      "observed_possession_percent": {
+        "A": 0.0,
+        "B": 100.0
+      },
+      "zone_occupancy_seconds": {
+        "A": {},
+        "B": {
+          "1": 0.40000000000000013
+        }
+      },
+      "player_zone_observation_seconds": {
+        "A": {
+          "2": 64.08000000000006,
+          "1": 187.00000000000227,
+          "0": 4.080000000000002
+        },
+        "B": {
+          "2": 39.640000000000015,
+          "1": 197.44000000000256,
+          "0": 14.28
+        }
+      },
+      "possession_changes": 0,
+      "track_observation_counts": {
+        "observed": 7082,
+        "predicted": 371
+      },
+      "team_names": {
+        "A": "Team A",
+        "B": "Team B"
+      },
+      "limitations": [
+        "Wide/replay segmentation and airborne filtering are heuristics pending independent validation.",
+        "Possession is proximity-based estimated control; possession changes are not official tackles or turnovers.",
+        "IDs are shot-local; offscreen players and predicted points are not statistical observations.",
+        "Pitch dimensions are assumed unless supplied; no full-match official statistics are inferred."
+      ]
+    },
+    "manifest": {
+      "schema_version": 1,
+      "signature": {
+        "runtime_versions": {
+          "torch": "2.14.0",
+          "torchvision": "0.29.0",
+          "ultralytics": "8.3.200",
+          "numpy": "2.5.3",
+          "scipy": "1.18.1",
+          "opencv-python": "5.0.0.93",
+          "lap": "0.5.12",
+          "shapely": "2.1.2",
+          "lsq-ellipse": "2.2.1"
+        },
+        "video_sha256": "077985a55b61fe2ca413221c082711655b7ba736a3bbd8ff97b4dfc0e5b03c57",
+        "model_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+        "ball_model_sha256": "8ab112dc0c7f0cc00c433675465e3def7a9e15386f20f71dffe28c997960d14f",
+        "config": {
+          "ball_tiling": true,
+          "ball_tile_size": 640,
+          "ball_confidence": 0.6,
+          "ball_acquire_confidence": 0.75,
+          "detector_confidence": 0.1,
+          "tracker_high_thresh": 0.15,
+          "tracker_low_thresh": 0.1,
+          "tracker_new_thresh": 0.25,
+          "tracker_buffer": 90,
+          "tracker_fuse_score": false,
+          "sample_hz": 10.0,
+          "imgsz": 1280,
+          "pitch_length": 105.0,
+          "pitch_width": 68.0,
+          "calibration_hz": 2.0,
+          "max_reprojection_px": 8.0,
+          "prediction_seconds": 1.0,
+          "possession_persistence": 0.5,
+          "possession_radius_m": 2.5,
+          "ambiguity_margin_m": 1.0,
+          "max_ball_speed_mps": 40.0,
+          "team_margin": 0.15,
+          "cut_threshold": 0.55,
+          "grass_fraction": 0.2,
+          "min_players": 6,
+          "pressure_window": 30.0,
+          "replay_distance": 3,
+          "replay_confirm_samples": 10
+        },
+        "metadata": {},
+        "max_seconds": null,
+        "device": "mps",
+        "code_hashes": {
+          "__init__.py": "d6f40bda63fc3be7432ca9d3cba5f7894093ee8f45b08d42150eac6bf86857d7",
+          "__main__.py": "a74c5c7dcf64bd7620cbd1850c5e9ad9d384dfd461ff5958ed703919599e0767",
+          "annotations.py": "d5dce2579aa87c54926df22fb25b341c888a999c616d11c6bce383394c36620f",
+          "calibration.py": "1eb91bb43e488a675da854a3edd810a2b6edc47591eaf89b7e3e6fe1aac28f25",
+          "coaching.py": "bd21b389a22941995ec67bff7288571f35207f7fda1ea96f7b096333d13e8a85",
+          "config.py": "f240e694b908e5bb8b7540be48751d38c98011a2f00b7c37da460b09aab53dc7",
+          "control.py": "1ba9a1ab381e96ea70242ff98f4a5563f5621022593a6d2f324465676708a998",
+          "detection.py": "3bc3b1146112ecbcf44881f5b90ac18aa5bfd190441fc33f443f83ce88e8dfc7",
+          "evaluation.py": "e1f8abb491c3b43555d89f678e55c9f3a505eb94f5d0f8d7d009a5dac0026ee5",
+          "hashing.py": "85a01f49680a8bdcb45c963f2b4ca1c7a8914950157ee13ba5a956705638e384",
+          "media.py": "ee254b027bfac74330a6541721d176fa54b86973371d8e87383aba9bfd1dd745",
+          "pipeline.py": "8e9d4eafadbf98d2ae17f74d71cce76d070bf5709bf3007e8e76eadc4e1bf0fc",
+          "pnl_worker.py": "971dfaeea28e1aa6a9a0175a57050ca91d396c23d5751ec7d452fb049c8c4b47",
+          "state.py": "704b9ce019596491a747e10934337c5c8cd693e77e52bf8773ecc1b1d39589e9",
+          "summary.py": "33fe134cd506741650910916357404bc0a458114389a3a7a8ef2fb84455fbbab",
+          "vision.py": "a2c748f59d58e29990af066e8f1c653df5d660d84f599909acf30a1d4364095f"
+        },
+        "pitch_assets_sha256": "6269be71ea3fbc4c369b4e66369feabe202c73b23399fe6424e88705752e5ad6"
+      },
+      "video": "/Users/rockingmac/Documents/Codex/2026-09-29/i-2/work/repos/ML-object-detection-project/input_videos/08fd33_4.mp4",
+      "video_end": 30.0,
+      "fps": 25.0,
+      "runtime": {
+        "python": "3.12.13",
+        "torch": "2.14.0",
+        "ultralytics": "8.3.200",
+        "platform": "macOS-27.2-arm64-arm-64bit",
+        "packages": {
+          "torch": "2.14.0",
+          "torchvision": "0.29.0",
+          "ultralytics": "8.3.200",
+          "numpy": "2.5.3",
+          "scipy": "1.18.1",
+          "opencv-python": "5.0.0.93",
+          "lap": "0.5.12",
+          "shapely": "2.1.2",
+          "lsq-ellipse": "2.2.1"
+        },
+        "hardware": "arm64"
+      },
+      "status": "experimental",
+      "segmentation": "HSV scene cuts + grass/person wide view + repeated visual content replay candidates; no trained replay classifier",
+      "processed_samples": 300,
+      "compute_seconds": 130.15355220797937,
+      "processed_samples_per_compute_second": 2.3049697446644704
+    },
+    "possession_diagnostics": {
+      "schema_version": 1,
+      "runtime_human_input_required": false,
+      "method": "Compare stable observed controlling-team colour assignments; teammates do not create team ambiguity.",
+      "reason_seconds": {
+        "missing_observed_ball": 4.7200000000000015,
+        "nearest_player_team_unknown": 8.159999999999997,
+        "awaiting_team_persistence": 1.7599999999999962,
+        "stable_observed_team_control": 0.40000000000000013,
+        "ball_outside_control_radius": 14.200000000000008,
+        "airborne_ball_uncertainty": 0.5599999999999978,
+        "excluded_interval": 0.1999999999999993
+      },
+      "longest_contiguous_observed_ball_seconds": 7.200000000000001,
+      "required_control_persistence_seconds": 0.5,
+      "accuracy_validated": false
+    }
+  },
+  "accuracy_claim": null,
+  "tests": "34 unit tests, including same-team passes, opponent/unassigned contests, referee exclusion, non-finite ball geometry, airborne overlap and source-immutable CPU reprocessing/event CSV export.",
+  "limitations": [
+    "No supported possession-change events were emitted in these short real clips; temporal precision/recall remain unmeasured.",
+    "Reprocessed smoke coverage rose 1.34% to 3.36%; newly run hybrid full pipeline smoke remained at 1.34%. These are different detector observations and do not prove a model-quality gain.",
+    "Validation has 19.04s without an observed ball and remains at zero covered possession.",
+    "Upper-body overlap is a conservative image heuristic, not validated ball height or ground contact.",
+    "Previously seen final footage is only a regression clip here."
+  ]
+}

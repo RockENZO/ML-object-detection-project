@@ -118,37 +118,93 @@ class Possession:
         self.last_time = None
 
     def update(self, t, ball, people, eligible, airborne=False):
-        # Unknown observations deliberately break the event chain.
-        distances = []
-        if eligible and ball is not None and not airborne:
-            for person in people:
-                if person.get("xy") is not None and person["observation"] == "observed":
-                    distances.append((math.dist(ball, person["xy"]), person["team"]))
-        distances.sort(key=lambda value: value[0])
-        team = None
-        if distances and distances[0][0] <= self.radius:
-            if len(distances) == 1 or distances[1][0] - distances[0][0] >= self.margin:
-                team = distances[0][1]
-        if team is None:
+        """Estimate team control from observations, then compare stable team colours.
+
+        Nearby teammates are evidence for the same team, not a contest. An
+        opposing or unassigned nearby player still causes abstention.
+        """
+
+        def unknown(reason):
             self.reset()
             self.last_time = t
+            self.evidence = {
+                "reason": reason,
+                "candidate_team": None,
+                "support_track_ids": [],
+            }
             return "unknown", None
-        if self.last_time is not None and t - self.last_time > 0.25:
+
+        if not eligible:
+            return unknown("excluded_interval")
+        if ball is None:
+            return unknown("missing_observed_ball")
+        if len(ball) != 2 or not all(math.isfinite(v) for v in ball):
+            return unknown("invalid_ball_geometry")
+        if airborne:
+            return unknown("airborne_ball_uncertainty")
+        distances = []
+        for person in people:
+            xy = person.get("xy")
+            if (
+                xy is not None
+                and len(xy) == 2
+                and all(math.isfinite(v) for v in xy)
+                and person["observation"] == "observed"
+                and person.get("role", "player") != "referee"
+            ):
+                distances.append((math.dist(ball, xy), person))
+        distances.sort(key=lambda value: value[0])
+        if not distances:
+            return unknown("no_observed_players")
+        nearest, person = distances[0]
+        if nearest > self.radius:
+            return unknown("ball_outside_control_radius")
+        team = person.get("team")
+        if team not in ("A", "B"):
+            return unknown("nearest_player_team_unknown")
+        contenders = [d for d, p in distances if p.get("team") != team]
+        competitor = min(contenders) if contenders else None
+        if competitor is not None and competitor - nearest < self.margin:
+            return unknown("contested_between_teams")
+        if self.last_time is not None and (
+            t <= self.last_time or t - self.last_time > 0.25
+        ):
             self.reset()
         self.last_time = t
         if team != self.candidate:
             self.candidate, self.candidate_since = team, t
-        if t - self.candidate_since + 1e-8 < self.persistence:
+        support = max(0, t - self.candidate_since)
+        self.evidence = {
+            "reason": "stable_observed_team_control"
+            if support + 1e-8 >= self.persistence
+            else "awaiting_team_persistence",
+            "candidate_team": team,
+            "nearest_distance_m": nearest,
+            "competing_distance_m": competitor,
+            "support_track_ids": [
+                p.get("id")
+                for d, p in distances
+                if p.get("team") == team
+                and d <= self.radius
+                and p.get("id") is not None
+            ],
+            "candidate_since": self.candidate_since,
+            "observed_support_seconds": support,
+        }
+        if support + 1e-8 < self.persistence:
             return "unknown", None
         event = None
         if self.stable and self.stable != team:
             event = {
                 "type": "possession_change",
+                "method": "observed_stable_team_colour_change",
                 "from_team": self.stable,
                 "to_team": team,
                 "timestamp": self.candidate_since,
                 "uncertainty": [self.previous_end, self.candidate_since],
                 "confirmed_at": t,
+                "observed_support_seconds": support,
+                "support_track_ids": self.evidence["support_track_ids"],
             }
         self.stable, self.previous_end = team, t
         return team, event

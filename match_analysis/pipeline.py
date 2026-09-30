@@ -18,7 +18,7 @@ from .config import Config
 from .hashing import digest
 from .state import BallSelector, Motion, Possession, TeamAssigner
 from .summary import summarize, validate_metadata
-from .vision import Segmenter, colour
+from .vision import Segmenter, airborne_uncertainty, colour
 
 
 def atomic_json(path, value):
@@ -425,21 +425,7 @@ def analyze(
                         confidence=chosen["confidence"],
                         observation="observed",
                     )
-                    nearby = [
-                        p
-                        for p in people
-                        if p["bbox"]
-                        and abs(pixel[0] - (p["bbox"][0] + p["bbox"][2]) / 2)
-                        < max(20, p["bbox"][2] - p["bbox"][0])
-                    ]
-                    ball["airborne_uncertain"] = bool(
-                        nearby
-                        and all(
-                            pixel[1]
-                            < p["bbox"][3] - 0.3 * (p["bbox"][3] - p["bbox"][1])
-                            for p in nearby
-                        )
-                    )
+                    ball["airborne_uncertain"] = airborne_uncertainty(pixel, people)
             if ball["xy"] is None and calibration["valid"] and view["eligible_view"]:
                 xy = ball_motion.predict("ball", timestamp)
                 if (
@@ -466,6 +452,7 @@ def analyze(
                 "ball": ball,
                 "ball_detections": raw_balls,
                 "possession": control,
+                "control_evidence": possession.evidence,
                 "event": event,
             }
             file.write(json.dumps(record, allow_nan=False) + "\n")
@@ -497,6 +484,9 @@ def analyze(
         from .coaching import export
 
         export(output, config)
+        from .control import export as control_export
+
+        control_export(output, config, video_end)
         state["complete"] = True
         manifest["processed_samples"] = samples
         manifest["compute_seconds"] = state["compute_seconds"]

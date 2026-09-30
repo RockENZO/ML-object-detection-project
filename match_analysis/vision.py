@@ -29,6 +29,22 @@ def colour(frame, bbox):
     ]
 
 
+def airborne_uncertainty(pixel, people):
+    """Upper-body image overlap is uncertainty; unrelated foreground heads are not.
+
+    This visual heuristic cannot establish a grounded ball or detect every aerial
+    ball. Never describe a negative result as validated ground contact.
+    """
+    for p in people:
+        box = p.get("bbox")
+        if not box or p.get("observation") != "observed":
+            continue
+        x1, y1, x2, y2 = box
+        if x1 <= pixel[0] <= x2 and y1 <= pixel[1] < y2 - 0.3 * (y2 - y1):
+            return True
+    return False
+
+
 def fingerprint(frame):
     small = cv2.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (9, 8))
     return int(

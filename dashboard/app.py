@@ -152,6 +152,8 @@ st.write(
 )
 st.subheader("Artifacts")
 for name in (
+    "possession.csv",
+    "possession_diagnostics.json",
     "coaching.json",
     "coaching.csv",
     "tracks.csv",

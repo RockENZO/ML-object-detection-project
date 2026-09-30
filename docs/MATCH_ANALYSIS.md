@@ -197,3 +197,26 @@ Validation SNGS-041: the combined profile preserved person IDF1 **0.692**, incre
 After locking the profile, final SNGS-079 produced person IDF1 **0.470**, assigned team accuracy **96.3%** at **70.0%** coverage, median pitch error **0.52 m** at **87.0%** matched projection coverage, raw ball precision/recall **14.0%/17.3%**, and filtered observed-ball precision/recall **17.9%/7.3%**. Estimated control covered **3.2%** of heuristically eligible time; its apparent 100% Team A share reflects only **0.88 seconds** and cannot describe the match. No supported control changes were emitted; precision/recall remain **unmeasured**, not perfect. The final result was not used to tune this release.
 
 The final 30-second clip required **136.10 seconds** on local MPS (~**2.20 sampled frames/s**). This includes two detectors, tiling, calibration and startup, and is not a cloud/full-match runtime estimate. Tracking and temporal coverage gates fail. The project is suitable for demonstrating reproducible experimental engineering and assisted visual review, **not certified coaching decisions or complete match statistics**.
+
+
+## Fully automatic controlling-team colour transitions
+
+Runtime does not require a human to identify possession changes. The algorithm detects an observed ball, finds the nearest observed player, obtains the player's accumulated jersey-colour team, requires 0.5 seconds of continuous supported team control, then compares the confirmed team with the previous confirmed team. An observed A→B or B→A emits an estimated possession-change event. Same-team passes or shot-local player ID changes do not themselves emit events.
+
+Nearby **teammates** now support the same team instead of causing ambiguous control. Nearby opponents or unassigned players still cause unknown control. Referees cannot be controlling players. Missing/predicted ball, predicted players, excluded intervals, cuts or genuinely ambiguous evidence break the transition chain. There is no inferred event across a missing segment.
+
+The airborne uncertainty heuristic now checks actual upper-body image overlap, preventing unrelated foreground players whose heads lie below the ball image from automatically flagging it as aerial. This remains an unvalidated visual heuristic: no overlap does **not** prove ground contact, and aerial balls away from bodies can be missed.
+
+Every sample records `control_evidence`: candidate team, nearest/competing distances, supporting track IDs, candidate start, observed support duration and the reason for unknown/pending/stable control. Confirmed events include the automatic method and supporting duration/IDs. `possession.csv` and `possession_diagnostics.json` expose how much time is lost to missing balls, uncertain teams, contested proximity, exclusion and insufficient persistence. The dashboard follows the video clock and shows the controlling-team candidate and its evidence.
+
+Previously completed observation artifacts can be processed automatically on CPU without running YOLO/PnLCalib again:
+
+```bash
+python -m match_analysis recompute-control --run artifacts/coaching \
+  --output artifacts/coaching-control-v3 --refresh-airborne
+python -m streamlit run dashboard/app.py -- --run artifacts/coaching-control-v3
+```
+
+Without `--refresh-airborne`, recorded airborne flags are preserved. Source observations are immutable; existing outputs are never overwritten. Source artifact hashes, source detector/calibration signatures and current control-code hashes are recorded separately. Reprocessing throughput is **not** GPU inference throughput. Previously examined evaluation footage is labelled regression footage for this iteration, not a fresh untouched benchmark.
+
+Automated results are estimates, not self-generated ground truth. Independent labels are used only to measure accuracy; they are not an input to this automatic runtime. No change-count/coverage improvement alone establishes correctness. See [automatic_control_results.json](automatic_control_results.json) for real-video results and uncertainty reasons.

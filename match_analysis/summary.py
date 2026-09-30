@@ -203,6 +203,9 @@ def summarize(output, config, metadata, video_end):
             file,
             fieldnames=[
                 "type",
+                "method",
+                "observed_support_seconds",
+                "support_track_ids",
                 "shot",
                 "timestamp",
                 "from_team",

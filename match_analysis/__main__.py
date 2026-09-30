@@ -31,6 +31,17 @@ def main(argv=None):
     freeze = subs.add_parser("freeze")
     freeze.add_argument("--sources", required=True, type=Path)
     freeze.add_argument("--output", required=True, type=Path)
+    control = subs.add_parser(
+        "recompute-control",
+        help="Automatically recompute team control from completed observed tracks; CPU only",
+    )
+    control.add_argument("--run", required=True, type=Path)
+    control.add_argument("--output", required=True, type=Path)
+    control.add_argument(
+        "--refresh-airborne",
+        action="store_true",
+        help="Recompute upper-body-overlap uncertainty from recorded pixel boxes",
+    )
     args = parser.parse_args(argv)
     try:
         if args.command == "analyze":
@@ -55,6 +66,10 @@ def main(argv=None):
                 args.max_seconds,
                 ball_checkpoint=args.ball_checkpoint,
             )
+        elif args.command == "recompute-control":
+            from .control import recompute
+
+            result = recompute(args.run, args.output, args.refresh_airborne)
         elif args.command == "freeze":
             from .evaluation import freeze
 

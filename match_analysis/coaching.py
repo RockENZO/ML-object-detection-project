@@ -19,6 +19,7 @@ def frame_features(frame, config, minimum=6):
         else frame["ball"].get("reason", frame["ball"]["observation"]),
         "ball_observation": frame["ball"]["observation"],
         "possession": frame["possession"],
+        "control_evidence": frame.get("control_evidence", {}),
         "teams": {},
     }
     for team in ("A", "B"):
