@@ -1,0 +1,24 @@
+{
+  "determinism_note": "Seed and split are fixed; MPS warned that some operations are nondeterministic. Exact metric reproduction is not guaranteed across hardware.",
+  "initial_checkpoint_sha256": "268e5bb54c640c96c3510224833bc2eeacab4135c6deb41502156e39986b562d",
+  "options": {
+    "batch": 8,
+    "data": "grouped/data.yaml",
+    "deterministic": true,
+    "device": "mps",
+    "epochs": 10,
+    "exist_ok": false,
+    "imgsz": 320,
+    "name": "train",
+    "patience": 10,
+    "project": "output-dir",
+    "seed": 42,
+    "workers": 0
+  },
+  "purpose": "Short transfer-learning baseline; not a converged production detector",
+  "python": "3.12.13",
+  "split_manifest_sha256": "877ff10bc3d807d6ded61064d2bcadcedc877218fb122e75fcb366d67c5b1fca",
+  "torch": "2.14.0",
+  "trained_checkpoint_sha256": "63fd2dde2ad4d3a30a1e54a263227dd05459ed229da16e5fc0a178769837d409",
+  "ultralytics": "8.3.200"
+}

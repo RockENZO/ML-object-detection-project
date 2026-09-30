@@ -1,0 +1,4 @@
+ultralytics==8.3.200
+torch==2.14.0
+torchvision==0.29.0
+numpy==2.5.3
