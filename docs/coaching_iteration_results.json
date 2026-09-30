@@ -1,0 +1,854 @@
+{
+  "date": "2026-09-30",
+  "status": "experimental",
+  "coach_release_ready": false,
+  "hardware": "Apple M4 Pro / MPS; no cloud GPU benchmark",
+  "study_scope": "30 seconds per development, validation and evaluation source match. Final clip measured once after profile lock.",
+  "partitions": {
+    "schema_version": 1,
+    "seed": "football-v1",
+    "match_overrides": {
+      "SoccerNet-GSR-game-2": "development",
+      "SoccerNet-GSR-game-3": "validation",
+      "SoccerNet-GSR-game-5": "evaluation"
+    },
+    "sources": [
+      {
+        "clip_id": "SNGS-033",
+        "match_id": "SoccerNet-GSR-game-2",
+        "video": "/Users/rockingmac/Documents/Codex/2026-09-29/i-2/work/repos/ML-object-detection-project/artifacts/gsr/SNGS-033.mp4",
+        "annotations": "/Users/rockingmac/Documents/Codex/2026-09-29/i-2/work/repos/ML-object-detection-project/artifacts/gsr/annotations.json",
+        "requested_partition": "development",
+        "partition": "development",
+        "video_sha256": "241d3fa03447d0a5e5b2ebd60367b3e9e097e275a4bf09e6e8ae1c43ce218176",
+        "annotations_sha256": "e1ba5290c1ecedbcf6facf744c76f68367a3f99b28121d4bf363373de36b1f5a"
+      },
+      {
+        "clip_id": "SNGS-041",
+        "match_id": "SoccerNet-GSR-game-3",
+        "video": "/Users/rockingmac/Documents/Codex/2026-09-29/i-2/work/repos/ML-object-detection-project/artifacts/gsr-v2/SNGS-041.mp4",
+        "annotations": "/Users/rockingmac/Documents/Codex/2026-09-29/i-2/work/repos/ML-object-detection-project/artifacts/gsr-v2/validation-annotations.json",
+        "requested_partition": "validation",
+        "partition": "validation",
+        "video_sha256": "1614f3b442d45a01fb3081594454bcde0020ee1d36496f617280cfc66cafdccf",
+        "annotations_sha256": "f31f5a98cc4db5766204760301e3624e7030250c85ab766b1f0eca13ca046056"
+      },
+      {
+        "clip_id": "SNGS-079",
+        "match_id": "SoccerNet-GSR-game-5",
+        "video": "/Users/rockingmac/Documents/Codex/2026-09-29/i-2/work/repos/ML-object-detection-project/artifacts/gsr-v2/SNGS-079.mp4",
+        "annotations": "/Users/rockingmac/Documents/Codex/2026-09-29/i-2/work/repos/ML-object-detection-project/artifacts/gsr-v2/evaluation-annotations.json",
+        "requested_partition": "evaluation",
+        "partition": "evaluation",
+        "video_sha256": "c1266db6c809584221e231c1700ae2d404e1685936a0d7bdf24dcea4dc4afc69",
+        "annotations_sha256": "05247cc46d3a9b4dd4b4022842c7d37e2cbd713d4d49d531322f77b58e0587e2"
+      }
+    ]
+  },
+  "selection": {
+    "locked_at_utc": "2026-09-30T09:42:54.481122+00:00",
+    "selected_profile": "original person model + adapted ball model + robust automatic jersey initialization",
+    "selection_partition": "SoccerNet-GSR-game-3 validation",
+    "final_partition_untouched_at_selection": "SoccerNet-GSR-game-5 evaluation",
+    "person_checkpoint_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+    "ball_checkpoint_sha256": "8ab112dc0c7f0cc00c433675465e3def7a9e15386f20f71dffe28c997960d14f",
+    "config": {
+      "ball_tiling": true,
+      "ball_tile_size": 640,
+      "ball_confidence": 0.6,
+      "ball_acquire_confidence": 0.75,
+      "detector_confidence": 0.1,
+      "tracker_high_thresh": 0.15,
+      "tracker_low_thresh": 0.1,
+      "tracker_new_thresh": 0.25,
+      "tracker_buffer": 90,
+      "tracker_fuse_score": false,
+      "sample_hz": 10.0,
+      "imgsz": 1280,
+      "pitch_length": 105.0,
+      "pitch_width": 68.0,
+      "calibration_hz": 2.0,
+      "max_reprojection_px": 8.0,
+      "prediction_seconds": 1.0,
+      "possession_persistence": 0.5,
+      "possession_radius_m": 2.5,
+      "ambiguity_margin_m": 1.0,
+      "max_ball_speed_mps": 40.0,
+      "team_margin": 0.15,
+      "cut_threshold": 0.55,
+      "grass_fraction": 0.2,
+      "min_players": 6,
+      "pressure_window": 30.0,
+      "replay_distance": 3,
+      "replay_confirm_samples": 10
+    },
+    "validation_metrics": {
+      "tracking_idf1": 0.6917098445595855,
+      "role_sensitive_tracking_idf1": 0.6768134715025906,
+      "role_accuracy_on_matches": 0.9730786930510814,
+      "identity_counts": {
+        "IDTP": 3204,
+        "IDFN": 1372,
+        "IDFP": 1484
+      },
+      "team_accuracy_on_assigned": 0.9714285714285714,
+      "team_assignment_coverage_on_matches": 0.7549376299376299,
+      "median_player_pitch_error_metres": 0.5165028184994864,
+      "pitch_matched_observations": 3472,
+      "pitch_projection_coverage_on_matches": 0.9022869022869023,
+      "team_mapping": {
+        "A": "left",
+        "B": "right"
+      },
+      "raw_ball_precision": 0.30716723549488056,
+      "raw_ball_recall": 0.3010033444816054,
+      "ball_precision": 0.29508196721311475,
+      "ball_recall": 0.06020066889632107,
+      "possession_coverage_on_eligible_annotations": null,
+      "segmentation_confusion_counts": {},
+      "transitions": null
+    },
+    "rationale": "Single adapted checkpoint reduced person IDF1. Hybrid preserves baseline IDF1 and improves raw ball F1; robust team initialization meets assigned accuracy target on validation. Overall experimental; no transition ground truth and zero covered possession."
+  },
+  "training": {
+    "initial_checkpoint_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+    "dataset_provenance_sha256": "1c9280026308b89bf4fa65cdb0f12b77ddd7c072a6ca85450635f987a6af35b7",
+    "data_sources": [
+      {
+        "clip_id": "SNGS-033",
+        "match_id": "SoccerNet-GSR-game-2",
+        "partition": "development",
+        "annotation_sha256": "e1ba5290c1ecedbcf6facf744c76f68367a3f99b28121d4bf363373de36b1f5a",
+        "source_label_sha256": "caa65b1f251e23e24a892f3b2773a9a74e068669843a5649b16ea3e319d740de"
+      },
+      {
+        "clip_id": "SNGS-041",
+        "match_id": "SoccerNet-GSR-game-3",
+        "partition": "validation",
+        "annotation_sha256": "f31f5a98cc4db5766204760301e3624e7030250c85ab766b1f0eca13ca046056",
+        "source_label_sha256": "bcbb23bc226d1fcbb42ecd731e44bf0f11291221840b4ed0a64b35b2892515ce"
+      }
+    ],
+    "best_checkpoint_sha256": "8ab112dc0c7f0cc00c433675465e3def7a9e15386f20f71dffe28c997960d14f",
+    "epochs": 8,
+    "imgsz": 640,
+    "freeze_backbone_layers": 10,
+    "device": "mps",
+    "torch": "2.14.0",
+    "ultralytics": "8.3.200",
+    "compute_seconds": 409.009440083988,
+    "selection": "Best validation aggregate detection fitness; final evaluation match never used."
+  },
+  "validation": {
+    "baseline": {
+      "evaluation": {
+        "status": "experimental",
+        "partition": "validation",
+        "clip_id": "SNGS-041",
+        "match_id": "SoccerNet-GSR-game-3",
+        "evaluation_code_sha256": "e1f8abb491c3b43555d89f678e55c9f3a505eb94f5d0f8d7d009a5dac0026ee5",
+        "annotation_sha256": "f31f5a98cc4db5766204760301e3624e7030250c85ab766b1f0eca13ca046056",
+        "partition_sha256": "4dac836e9c4313e3cd3e8d5bda8ade163e7ef62ce42fd2c1d97fc07ddc4e045f",
+        "run_signature": {
+          "runtime_versions": {
+            "torch": "2.14.0",
+            "torchvision": "0.29.0",
+            "ultralytics": "8.3.200",
+            "numpy": "2.5.3",
+            "scipy": "1.18.1",
+            "opencv-python": "5.0.0.93",
+            "lap": "0.5.12",
+            "shapely": "2.1.2",
+            "lsq-ellipse": "2.2.1"
+          },
+          "video_sha256": "1614f3b442d45a01fb3081594454bcde0020ee1d36496f617280cfc66cafdccf",
+          "model_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+          "config": {
+            "ball_tiling": true,
+            "ball_tile_size": 640,
+            "ball_confidence": 0.6,
+            "ball_acquire_confidence": 0.75,
+            "detector_confidence": 0.1,
+            "tracker_high_thresh": 0.15,
+            "tracker_low_thresh": 0.1,
+            "tracker_new_thresh": 0.25,
+            "tracker_buffer": 90,
+            "tracker_fuse_score": false,
+            "sample_hz": 10.0,
+            "imgsz": 1280,
+            "pitch_length": 105.0,
+            "pitch_width": 68.0,
+            "calibration_hz": 2.0,
+            "max_reprojection_px": 8.0,
+            "prediction_seconds": 1.0,
+            "possession_persistence": 0.5,
+            "possession_radius_m": 2.5,
+            "ambiguity_margin_m": 1.0,
+            "max_ball_speed_mps": 40.0,
+            "team_margin": 0.15,
+            "cut_threshold": 0.55,
+            "grass_fraction": 0.2,
+            "min_players": 6,
+            "pressure_window": 30.0,
+            "replay_distance": 3,
+            "replay_confirm_samples": 10
+          },
+          "metadata": {},
+          "max_seconds": null,
+          "device": "mps",
+          "code_hashes": {
+            "__init__.py": "d6f40bda63fc3be7432ca9d3cba5f7894093ee8f45b08d42150eac6bf86857d7",
+            "__main__.py": "ffb24997aab0ce4ac5802bd49b34fe5ebf302247db21771bd1772beeed7b0943",
+            "annotations.py": "d5dce2579aa87c54926df22fb25b341c888a999c616d11c6bce383394c36620f",
+            "calibration.py": "1eb91bb43e488a675da854a3edd810a2b6edc47591eaf89b7e3e6fe1aac28f25",
+            "coaching.py": "490265fe6396c9f0a7e5455964c9ff4162bd7a27310ba8c3f54eb58ed06ece2f",
+            "config.py": "f240e694b908e5bb8b7540be48751d38c98011a2f00b7c37da460b09aab53dc7",
+            "detection.py": "9da85249dbfdc464dc4c28457861e518bbcce2b04d305a82c20b6ab2434c0626",
+            "evaluation.py": "e1f8abb491c3b43555d89f678e55c9f3a505eb94f5d0f8d7d009a5dac0026ee5",
+            "hashing.py": "85a01f49680a8bdcb45c963f2b4ca1c7a8914950157ee13ba5a956705638e384",
+            "media.py": "ee254b027bfac74330a6541721d176fa54b86973371d8e87383aba9bfd1dd745",
+            "pipeline.py": "30c99a2a5050284e7206bb363d27752001463701246030d9e9455d18de4d59b9",
+            "pnl_worker.py": "971dfaeea28e1aa6a9a0175a57050ca91d396c23d5751ec7d452fb049c8c4b47",
+            "state.py": "964669cc78234eb425f22ce7aa367b3a7b8333b8cffddcbfccf61794abcbbe81",
+            "summary.py": "c0ec161a2970a8f8b83ee621ce688330d637fbf183145d63fd2e91d3cf67570a",
+            "vision.py": "31ec3b7f70ed2da6a119d27be9afa2a5f82258d51956db611a43415c9f85c004"
+          },
+          "pitch_assets_sha256": "6269be71ea3fbc4c369b4e66369feabe202c73b23399fe6424e88705752e5ad6"
+        },
+        "annotated_frames": 300,
+        "metrics": {
+          "tracking_idf1": 0.6917098445595855,
+          "role_sensitive_tracking_idf1": 0.6768134715025906,
+          "role_accuracy_on_matches": 0.9730786930510814,
+          "identity_counts": {
+            "IDTP": 3204,
+            "IDFN": 1372,
+            "IDFP": 1484
+          },
+          "team_accuracy_on_assigned": 0.7299813780260708,
+          "team_assignment_coverage_on_matches": 0.5582120582120582,
+          "median_player_pitch_error_metres": 0.5165028184994864,
+          "pitch_matched_observations": 3472,
+          "pitch_projection_coverage_on_matches": 0.9022869022869023,
+          "team_mapping": {
+            "A": "left",
+            "B": "right"
+          },
+          "raw_ball_precision": 0.17197452229299362,
+          "raw_ball_recall": 0.0903010033444816,
+          "ball_precision": 0.16216216216216217,
+          "ball_recall": 0.04013377926421405,
+          "possession_coverage_on_eligible_annotations": null,
+          "segmentation_confusion_counts": {},
+          "transitions": null
+        },
+        "release_targets_met": {
+          "tracking_idf1": false,
+          "team_accuracy_on_assigned": false,
+          "median_player_pitch_error_metres": true,
+          "transition_precision": false,
+          "transition_recall": false
+        },
+        "limitations": [
+          "Person IDF1 uses geometry at IoU >=0.5; role-sensitive legacy IDF1 and role accuracy are reported separately. Not official GS-HOTA.",
+          "A single clip cannot certify a full release; aggregate held-out source matches and inspect failures.",
+          "Missing labels remain unmeasured; ball-action labels do not imply possession-change ground truth."
+        ]
+      },
+      "summary": {
+        "schema_version": 1,
+        "status": "experimental",
+        "sampled_frames": 300,
+        "durations": {
+          "sampled_seconds": 30.0,
+          "eligible_seconds": 25.080000000000002
+        },
+        "unknown_eligible_seconds": 25.080000000000002,
+        "excluded_seconds": 4.919999999999998,
+        "possession_coverage": 0.0,
+        "eligible_fraction": 0.8360000000000001,
+        "observed_possession_percent": {
+          "A": null,
+          "B": null
+        },
+        "zone_occupancy_seconds": {
+          "A": {},
+          "B": {}
+        },
+        "player_zone_observation_seconds": {
+          "A": {
+            "1": 173.7200000000018,
+            "0": 10.32,
+            "2": 26.599999999999998
+          },
+          "B": {
+            "0": 1.6
+          }
+        },
+        "possession_changes": 0,
+        "track_observation_counts": {
+          "observed": 4688,
+          "predicted": 718
+        },
+        "team_names": {
+          "A": "Team A",
+          "B": "Team B"
+        },
+        "limitations": [
+          "Wide/replay segmentation and airborne filtering are heuristics pending independent validation.",
+          "Possession is proximity-based estimated control; possession changes are not official tackles or turnovers.",
+          "IDs are shot-local; offscreen players and predicted points are not statistical observations.",
+          "Pitch dimensions are assumed unless supplied; no full-match official statistics are inferred."
+        ]
+      },
+      "compute_seconds": 133.95239254203625,
+      "sampled_frames_per_compute_second": 2.2396016547883275,
+      "coaching_support": {
+        "A": 14,
+        "B": 0
+      },
+      "coaching_samples": 30
+    },
+    "adapted_all_classes": {
+      "evaluation": {
+        "status": "experimental",
+        "partition": "validation",
+        "clip_id": "SNGS-041",
+        "match_id": "SoccerNet-GSR-game-3",
+        "evaluation_code_sha256": "e1f8abb491c3b43555d89f678e55c9f3a505eb94f5d0f8d7d009a5dac0026ee5",
+        "annotation_sha256": "f31f5a98cc4db5766204760301e3624e7030250c85ab766b1f0eca13ca046056",
+        "partition_sha256": "4dac836e9c4313e3cd3e8d5bda8ade163e7ef62ce42fd2c1d97fc07ddc4e045f",
+        "run_signature": {
+          "runtime_versions": {
+            "torch": "2.14.0",
+            "torchvision": "0.29.0",
+            "ultralytics": "8.3.200",
+            "numpy": "2.5.3",
+            "scipy": "1.18.1",
+            "opencv-python": "5.0.0.93",
+            "lap": "0.5.12",
+            "shapely": "2.1.2",
+            "lsq-ellipse": "2.2.1"
+          },
+          "video_sha256": "1614f3b442d45a01fb3081594454bcde0020ee1d36496f617280cfc66cafdccf",
+          "model_sha256": "8ab112dc0c7f0cc00c433675465e3def7a9e15386f20f71dffe28c997960d14f",
+          "config": {
+            "ball_tiling": true,
+            "ball_tile_size": 640,
+            "ball_confidence": 0.6,
+            "ball_acquire_confidence": 0.75,
+            "detector_confidence": 0.1,
+            "tracker_high_thresh": 0.15,
+            "tracker_low_thresh": 0.1,
+            "tracker_new_thresh": 0.25,
+            "tracker_buffer": 90,
+            "tracker_fuse_score": false,
+            "sample_hz": 10.0,
+            "imgsz": 1280,
+            "pitch_length": 105.0,
+            "pitch_width": 68.0,
+            "calibration_hz": 2.0,
+            "max_reprojection_px": 8.0,
+            "prediction_seconds": 1.0,
+            "possession_persistence": 0.5,
+            "possession_radius_m": 2.5,
+            "ambiguity_margin_m": 1.0,
+            "max_ball_speed_mps": 40.0,
+            "team_margin": 0.15,
+            "cut_threshold": 0.55,
+            "grass_fraction": 0.2,
+            "min_players": 6,
+            "pressure_window": 30.0,
+            "replay_distance": 3,
+            "replay_confirm_samples": 10
+          },
+          "metadata": {},
+          "max_seconds": null,
+          "device": "mps",
+          "code_hashes": {
+            "__init__.py": "d6f40bda63fc3be7432ca9d3cba5f7894093ee8f45b08d42150eac6bf86857d7",
+            "__main__.py": "ffb24997aab0ce4ac5802bd49b34fe5ebf302247db21771bd1772beeed7b0943",
+            "annotations.py": "d5dce2579aa87c54926df22fb25b341c888a999c616d11c6bce383394c36620f",
+            "calibration.py": "1eb91bb43e488a675da854a3edd810a2b6edc47591eaf89b7e3e6fe1aac28f25",
+            "coaching.py": "490265fe6396c9f0a7e5455964c9ff4162bd7a27310ba8c3f54eb58ed06ece2f",
+            "config.py": "f240e694b908e5bb8b7540be48751d38c98011a2f00b7c37da460b09aab53dc7",
+            "detection.py": "9da85249dbfdc464dc4c28457861e518bbcce2b04d305a82c20b6ab2434c0626",
+            "evaluation.py": "e1f8abb491c3b43555d89f678e55c9f3a505eb94f5d0f8d7d009a5dac0026ee5",
+            "hashing.py": "85a01f49680a8bdcb45c963f2b4ca1c7a8914950157ee13ba5a956705638e384",
+            "media.py": "ee254b027bfac74330a6541721d176fa54b86973371d8e87383aba9bfd1dd745",
+            "pipeline.py": "30c99a2a5050284e7206bb363d27752001463701246030d9e9455d18de4d59b9",
+            "pnl_worker.py": "971dfaeea28e1aa6a9a0175a57050ca91d396c23d5751ec7d452fb049c8c4b47",
+            "state.py": "964669cc78234eb425f22ce7aa367b3a7b8333b8cffddcbfccf61794abcbbe81",
+            "summary.py": "c0ec161a2970a8f8b83ee621ce688330d637fbf183145d63fd2e91d3cf67570a",
+            "vision.py": "31ec3b7f70ed2da6a119d27be9afa2a5f82258d51956db611a43415c9f85c004"
+          },
+          "pitch_assets_sha256": "6269be71ea3fbc4c369b4e66369feabe202c73b23399fe6424e88705752e5ad6"
+        },
+        "annotated_frames": 300,
+        "metrics": {
+          "tracking_idf1": 0.5995475113122172,
+          "role_sensitive_tracking_idf1": 0.5662278897573015,
+          "role_accuracy_on_matches": 0.9416550441655044,
+          "identity_counts": {
+            "IDTP": 2915,
+            "IDFN": 1661,
+            "IDFP": 2233
+          },
+          "team_accuracy_on_assigned": 0.9881252249010435,
+          "team_assignment_coverage_on_matches": 0.7317008952080042,
+          "median_player_pitch_error_metres": 0.5326167759000846,
+          "pitch_matched_observations": 3426,
+          "pitch_projection_coverage_on_matches": 0.9020537124802528,
+          "team_mapping": {
+            "A": "left",
+            "B": "right"
+          },
+          "raw_ball_precision": 0.30716723549488056,
+          "raw_ball_recall": 0.3010033444816054,
+          "ball_precision": 0.29508196721311475,
+          "ball_recall": 0.06020066889632107,
+          "possession_coverage_on_eligible_annotations": null,
+          "segmentation_confusion_counts": {},
+          "transitions": null
+        },
+        "release_targets_met": {
+          "tracking_idf1": false,
+          "team_accuracy_on_assigned": true,
+          "median_player_pitch_error_metres": true,
+          "transition_precision": false,
+          "transition_recall": false
+        },
+        "limitations": [
+          "Person IDF1 uses geometry at IoU >=0.5; role-sensitive legacy IDF1 and role accuracy are reported separately. Not official GS-HOTA.",
+          "A single clip cannot certify a full release; aggregate held-out source matches and inspect failures.",
+          "Missing labels remain unmeasured; ball-action labels do not imply possession-change ground truth."
+        ]
+      },
+      "summary": {
+        "schema_version": 1,
+        "status": "experimental",
+        "sampled_frames": 300,
+        "durations": {
+          "sampled_seconds": 30.0,
+          "eligible_seconds": 25.080000000000002
+        },
+        "unknown_eligible_seconds": 25.080000000000002,
+        "excluded_seconds": 4.919999999999998,
+        "possession_coverage": 0.0,
+        "eligible_fraction": 0.8360000000000001,
+        "observed_possession_percent": {
+          "A": null,
+          "B": null
+        },
+        "zone_occupancy_seconds": {
+          "A": {},
+          "B": {}
+        },
+        "player_zone_observation_seconds": {
+          "A": {
+            "0": 14.079999999999998,
+            "1": 160.7600000000014,
+            "2": 18.20000000000001
+          },
+          "B": {
+            "1": 79.8400000000001,
+            "0": 2.880000000000001,
+            "2": 28.919999999999995
+          }
+        },
+        "possession_changes": 0,
+        "track_observation_counts": {
+          "observed": 5148,
+          "predicted": 1610
+        },
+        "team_names": {
+          "A": "Team A",
+          "B": "Team B"
+        },
+        "limitations": [
+          "Wide/replay segmentation and airborne filtering are heuristics pending independent validation.",
+          "Possession is proximity-based estimated control; possession changes are not official tackles or turnovers.",
+          "IDs are shot-local; offscreen players and predicted points are not statistical observations.",
+          "Pitch dimensions are assumed unless supplied; no full-match official statistics are inferred."
+        ]
+      },
+      "compute_seconds": 136.0929286669707,
+      "sampled_frames_per_compute_second": 2.20437610490492,
+      "coaching_support": {
+        "A": 14,
+        "B": 6
+      },
+      "coaching_samples": 30
+    },
+    "hybrid_robust_teams": {
+      "evaluation": {
+        "status": "experimental",
+        "partition": "validation",
+        "clip_id": "SNGS-041",
+        "match_id": "SoccerNet-GSR-game-3",
+        "evaluation_code_sha256": "e1f8abb491c3b43555d89f678e55c9f3a505eb94f5d0f8d7d009a5dac0026ee5",
+        "annotation_sha256": "f31f5a98cc4db5766204760301e3624e7030250c85ab766b1f0eca13ca046056",
+        "partition_sha256": "4dac836e9c4313e3cd3e8d5bda8ade163e7ef62ce42fd2c1d97fc07ddc4e045f",
+        "run_signature": {
+          "runtime_versions": {
+            "torch": "2.14.0",
+            "torchvision": "0.29.0",
+            "ultralytics": "8.3.200",
+            "numpy": "2.5.3",
+            "scipy": "1.18.1",
+            "opencv-python": "5.0.0.93",
+            "lap": "0.5.12",
+            "shapely": "2.1.2",
+            "lsq-ellipse": "2.2.1"
+          },
+          "video_sha256": "1614f3b442d45a01fb3081594454bcde0020ee1d36496f617280cfc66cafdccf",
+          "model_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+          "ball_model_sha256": "8ab112dc0c7f0cc00c433675465e3def7a9e15386f20f71dffe28c997960d14f",
+          "config": {
+            "ball_tiling": true,
+            "ball_tile_size": 640,
+            "ball_confidence": 0.6,
+            "ball_acquire_confidence": 0.75,
+            "detector_confidence": 0.1,
+            "tracker_high_thresh": 0.15,
+            "tracker_low_thresh": 0.1,
+            "tracker_new_thresh": 0.25,
+            "tracker_buffer": 90,
+            "tracker_fuse_score": false,
+            "sample_hz": 10.0,
+            "imgsz": 1280,
+            "pitch_length": 105.0,
+            "pitch_width": 68.0,
+            "calibration_hz": 2.0,
+            "max_reprojection_px": 8.0,
+            "prediction_seconds": 1.0,
+            "possession_persistence": 0.5,
+            "possession_radius_m": 2.5,
+            "ambiguity_margin_m": 1.0,
+            "max_ball_speed_mps": 40.0,
+            "team_margin": 0.15,
+            "cut_threshold": 0.55,
+            "grass_fraction": 0.2,
+            "min_players": 6,
+            "pressure_window": 30.0,
+            "replay_distance": 3,
+            "replay_confirm_samples": 10
+          },
+          "metadata": {},
+          "max_seconds": null,
+          "device": "mps",
+          "code_hashes": {
+            "__init__.py": "d6f40bda63fc3be7432ca9d3cba5f7894093ee8f45b08d42150eac6bf86857d7",
+            "__main__.py": "c87f92d34dc9abf6bf4e129c45353dc48e0cdf77822171d72a650d593e003ffe",
+            "annotations.py": "d5dce2579aa87c54926df22fb25b341c888a999c616d11c6bce383394c36620f",
+            "calibration.py": "1eb91bb43e488a675da854a3edd810a2b6edc47591eaf89b7e3e6fe1aac28f25",
+            "coaching.py": "490265fe6396c9f0a7e5455964c9ff4162bd7a27310ba8c3f54eb58ed06ece2f",
+            "config.py": "f240e694b908e5bb8b7540be48751d38c98011a2f00b7c37da460b09aab53dc7",
+            "detection.py": "3bc3b1146112ecbcf44881f5b90ac18aa5bfd190441fc33f443f83ce88e8dfc7",
+            "evaluation.py": "e1f8abb491c3b43555d89f678e55c9f3a505eb94f5d0f8d7d009a5dac0026ee5",
+            "hashing.py": "85a01f49680a8bdcb45c963f2b4ca1c7a8914950157ee13ba5a956705638e384",
+            "media.py": "ee254b027bfac74330a6541721d176fa54b86973371d8e87383aba9bfd1dd745",
+            "pipeline.py": "d17227fcf1eff0ed1a57de6b9ec947d1814b53d4cd3aad439fcb917148caa94e",
+            "pnl_worker.py": "971dfaeea28e1aa6a9a0175a57050ca91d396c23d5751ec7d452fb049c8c4b47",
+            "state.py": "7f46bc24e33328ba59327a197fc06de40a38aec694a8cd13ea6d3d775e95b845",
+            "summary.py": "c0ec161a2970a8f8b83ee621ce688330d637fbf183145d63fd2e91d3cf67570a",
+            "vision.py": "31ec3b7f70ed2da6a119d27be9afa2a5f82258d51956db611a43415c9f85c004"
+          },
+          "pitch_assets_sha256": "6269be71ea3fbc4c369b4e66369feabe202c73b23399fe6424e88705752e5ad6"
+        },
+        "annotated_frames": 300,
+        "metrics": {
+          "tracking_idf1": 0.6917098445595855,
+          "role_sensitive_tracking_idf1": 0.6768134715025906,
+          "role_accuracy_on_matches": 0.9730786930510814,
+          "identity_counts": {
+            "IDTP": 3204,
+            "IDFN": 1372,
+            "IDFP": 1484
+          },
+          "team_accuracy_on_assigned": 0.9714285714285714,
+          "team_assignment_coverage_on_matches": 0.7549376299376299,
+          "median_player_pitch_error_metres": 0.5165028184994864,
+          "pitch_matched_observations": 3472,
+          "pitch_projection_coverage_on_matches": 0.9022869022869023,
+          "team_mapping": {
+            "A": "left",
+            "B": "right"
+          },
+          "raw_ball_precision": 0.30716723549488056,
+          "raw_ball_recall": 0.3010033444816054,
+          "ball_precision": 0.29508196721311475,
+          "ball_recall": 0.06020066889632107,
+          "possession_coverage_on_eligible_annotations": null,
+          "segmentation_confusion_counts": {},
+          "transitions": null
+        },
+        "release_targets_met": {
+          "tracking_idf1": false,
+          "team_accuracy_on_assigned": true,
+          "median_player_pitch_error_metres": true,
+          "transition_precision": false,
+          "transition_recall": false
+        },
+        "limitations": [
+          "Person IDF1 uses geometry at IoU >=0.5; role-sensitive legacy IDF1 and role accuracy are reported separately. Not official GS-HOTA.",
+          "A single clip cannot certify a full release; aggregate held-out source matches and inspect failures.",
+          "Missing labels remain unmeasured; ball-action labels do not imply possession-change ground truth."
+        ]
+      },
+      "summary": {
+        "schema_version": 1,
+        "status": "experimental",
+        "sampled_frames": 300,
+        "durations": {
+          "sampled_seconds": 30.0,
+          "eligible_seconds": 25.080000000000002
+        },
+        "unknown_eligible_seconds": 25.080000000000002,
+        "excluded_seconds": 4.919999999999998,
+        "possession_coverage": 0.0,
+        "eligible_fraction": 0.8360000000000001,
+        "observed_possession_percent": {
+          "A": null,
+          "B": null
+        },
+        "zone_occupancy_seconds": {
+          "A": {},
+          "B": {}
+        },
+        "player_zone_observation_seconds": {
+          "A": {
+            "1": 139.56000000000074,
+            "0": 11.2,
+            "2": 15.839999999999993
+          },
+          "B": {
+            "1": 81.51999999999998,
+            "0": 3.16,
+            "2": 31.64
+          }
+        },
+        "possession_changes": 0,
+        "track_observation_counts": {
+          "observed": 4688,
+          "predicted": 718
+        },
+        "team_names": {
+          "A": "Team A",
+          "B": "Team B"
+        },
+        "limitations": [
+          "Wide/replay segmentation and airborne filtering are heuristics pending independent validation.",
+          "Possession is proximity-based estimated control; possession changes are not official tackles or turnovers.",
+          "IDs are shot-local; offscreen players and predicted points are not statistical observations.",
+          "Pitch dimensions are assumed unless supplied; no full-match official statistics are inferred."
+        ]
+      },
+      "compute_seconds": 139.12332050001714,
+      "sampled_frames_per_compute_second": 2.15636026312327,
+      "coaching_support": {
+        "A": 15,
+        "B": 11
+      },
+      "coaching_samples": 30
+    }
+  },
+  "evaluation": {
+    "evaluation": {
+      "status": "experimental",
+      "partition": "evaluation",
+      "clip_id": "SNGS-079",
+      "match_id": "SoccerNet-GSR-game-5",
+      "evaluation_code_sha256": "e1f8abb491c3b43555d89f678e55c9f3a505eb94f5d0f8d7d009a5dac0026ee5",
+      "annotation_sha256": "05247cc46d3a9b4dd4b4022842c7d37e2cbd713d4d49d531322f77b58e0587e2",
+      "partition_sha256": "4dac836e9c4313e3cd3e8d5bda8ade163e7ef62ce42fd2c1d97fc07ddc4e045f",
+      "run_signature": {
+        "runtime_versions": {
+          "torch": "2.14.0",
+          "torchvision": "0.29.0",
+          "ultralytics": "8.3.200",
+          "numpy": "2.5.3",
+          "scipy": "1.18.1",
+          "opencv-python": "5.0.0.93",
+          "lap": "0.5.12",
+          "shapely": "2.1.2",
+          "lsq-ellipse": "2.2.1"
+        },
+        "video_sha256": "c1266db6c809584221e231c1700ae2d404e1685936a0d7bdf24dcea4dc4afc69",
+        "model_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+        "ball_model_sha256": "8ab112dc0c7f0cc00c433675465e3def7a9e15386f20f71dffe28c997960d14f",
+        "config": {
+          "ball_tiling": true,
+          "ball_tile_size": 640,
+          "ball_confidence": 0.6,
+          "ball_acquire_confidence": 0.75,
+          "detector_confidence": 0.1,
+          "tracker_high_thresh": 0.15,
+          "tracker_low_thresh": 0.1,
+          "tracker_new_thresh": 0.25,
+          "tracker_buffer": 90,
+          "tracker_fuse_score": false,
+          "sample_hz": 10.0,
+          "imgsz": 1280,
+          "pitch_length": 105.0,
+          "pitch_width": 68.0,
+          "calibration_hz": 2.0,
+          "max_reprojection_px": 8.0,
+          "prediction_seconds": 1.0,
+          "possession_persistence": 0.5,
+          "possession_radius_m": 2.5,
+          "ambiguity_margin_m": 1.0,
+          "max_ball_speed_mps": 40.0,
+          "team_margin": 0.15,
+          "cut_threshold": 0.55,
+          "grass_fraction": 0.2,
+          "min_players": 6,
+          "pressure_window": 30.0,
+          "replay_distance": 3,
+          "replay_confirm_samples": 10
+        },
+        "metadata": {},
+        "max_seconds": null,
+        "device": "mps",
+        "code_hashes": {
+          "__init__.py": "d6f40bda63fc3be7432ca9d3cba5f7894093ee8f45b08d42150eac6bf86857d7",
+          "__main__.py": "c87f92d34dc9abf6bf4e129c45353dc48e0cdf77822171d72a650d593e003ffe",
+          "annotations.py": "d5dce2579aa87c54926df22fb25b341c888a999c616d11c6bce383394c36620f",
+          "calibration.py": "1eb91bb43e488a675da854a3edd810a2b6edc47591eaf89b7e3e6fe1aac28f25",
+          "coaching.py": "490265fe6396c9f0a7e5455964c9ff4162bd7a27310ba8c3f54eb58ed06ece2f",
+          "config.py": "f240e694b908e5bb8b7540be48751d38c98011a2f00b7c37da460b09aab53dc7",
+          "detection.py": "3bc3b1146112ecbcf44881f5b90ac18aa5bfd190441fc33f443f83ce88e8dfc7",
+          "evaluation.py": "e1f8abb491c3b43555d89f678e55c9f3a505eb94f5d0f8d7d009a5dac0026ee5",
+          "hashing.py": "85a01f49680a8bdcb45c963f2b4ca1c7a8914950157ee13ba5a956705638e384",
+          "media.py": "ee254b027bfac74330a6541721d176fa54b86973371d8e87383aba9bfd1dd745",
+          "pipeline.py": "d17227fcf1eff0ed1a57de6b9ec947d1814b53d4cd3aad439fcb917148caa94e",
+          "pnl_worker.py": "971dfaeea28e1aa6a9a0175a57050ca91d396c23d5751ec7d452fb049c8c4b47",
+          "state.py": "7f46bc24e33328ba59327a197fc06de40a38aec694a8cd13ea6d3d775e95b845",
+          "summary.py": "c0ec161a2970a8f8b83ee621ce688330d637fbf183145d63fd2e91d3cf67570a",
+          "vision.py": "31ec3b7f70ed2da6a119d27be9afa2a5f82258d51956db611a43415c9f85c004"
+        },
+        "pitch_assets_sha256": "6269be71ea3fbc4c369b4e66369feabe202c73b23399fe6424e88705752e5ad6"
+      },
+      "annotated_frames": 300,
+      "metrics": {
+        "tracking_idf1": 0.46970698391716237,
+        "role_sensitive_tracking_idf1": 0.449438202247191,
+        "role_accuracy_on_matches": 0.9372744934776575,
+        "identity_counts": {
+          "IDTP": 2132,
+          "IDFN": 2949,
+          "IDFP": 1865
+        },
+        "team_accuracy_on_assigned": 0.9626832518880497,
+        "team_assignment_coverage_on_matches": 0.6997202362449487,
+        "median_player_pitch_error_metres": 0.5204971037412304,
+        "pitch_matched_observations": 2769,
+        "pitch_projection_coverage_on_matches": 0.8704809808236403,
+        "team_mapping": {
+          "B": "left",
+          "A": "right"
+        },
+        "raw_ball_precision": 0.13978494623655913,
+        "raw_ball_recall": 0.17333333333333334,
+        "ball_precision": 0.17886178861788618,
+        "ball_recall": 0.07333333333333333,
+        "possession_coverage_on_eligible_annotations": null,
+        "segmentation_confusion_counts": {},
+        "transitions": null
+      },
+      "release_targets_met": {
+        "tracking_idf1": false,
+        "team_accuracy_on_assigned": true,
+        "median_player_pitch_error_metres": true,
+        "transition_precision": false,
+        "transition_recall": false
+      },
+      "limitations": [
+        "Person IDF1 uses geometry at IoU >=0.5; role-sensitive legacy IDF1 and role accuracy are reported separately. Not official GS-HOTA.",
+        "A single clip cannot certify a full release; aggregate held-out source matches and inspect failures.",
+        "Missing labels remain unmeasured; ball-action labels do not imply possession-change ground truth."
+      ]
+    },
+    "summary": {
+      "schema_version": 1,
+      "status": "experimental",
+      "sampled_frames": 300,
+      "durations": {
+        "sampled_seconds": 30.0,
+        "eligible_seconds": 27.319999999999997,
+        "A": 0.879999999999999
+      },
+      "unknown_eligible_seconds": 26.439999999999998,
+      "excluded_seconds": 2.6800000000000033,
+      "possession_coverage": 0.03221083455344067,
+      "eligible_fraction": 0.9106666666666665,
+      "observed_possession_percent": {
+        "A": 100.0,
+        "B": 0.0
+      },
+      "zone_occupancy_seconds": {
+        "A": {
+          "2": 0.879999999999999
+        },
+        "B": {}
+      },
+      "player_zone_observation_seconds": {
+        "A": {
+          "2": 82.84000000000012,
+          "1": 25.759999999999987
+        },
+        "B": {
+          "2": 46.23999999999991,
+          "1": 64.2800000000001
+        }
+      },
+      "possession_changes": 0,
+      "track_observation_counts": {
+        "observed": 3997,
+        "predicted": 874
+      },
+      "team_names": {
+        "A": "Team A",
+        "B": "Team B"
+      },
+      "limitations": [
+        "Wide/replay segmentation and airborne filtering are heuristics pending independent validation.",
+        "Possession is proximity-based estimated control; possession changes are not official tackles or turnovers.",
+        "IDs are shot-local; offscreen players and predicted points are not statistical observations.",
+        "Pitch dimensions are assumed unless supplied; no full-match official statistics are inferred."
+      ]
+    },
+    "compute_seconds": 136.09854979196098,
+    "sampled_frames_per_compute_second": 2.204285060043456,
+    "coaching_support": {
+      "A": 9,
+      "B": 7
+    },
+    "coaching_samples": 30
+  },
+  "failure_cases": [
+    {
+      "case": "Detector class filter leaked from ball tiles into the next full frame",
+      "handling": "Fixed explicit classes=None and regression-tested. artifacts/coach-validation-base and validation-base-metrics.json are invalid integration evidence and excluded from comparisons."
+    },
+    {
+      "case": "All-class adaptation improved ball recall but reduced validation person IDF1",
+      "handling": "Retained original person weights; adapted weights supply ball detections only."
+    },
+    {
+      "case": "Sparse outlier colour seeded a spurious team cluster",
+      "handling": "Warm up 120 torso measurements and seed dense colour groups. Validation assigned team accuracy improved 73.0% to 97.1%, with reported coverage."
+    },
+    {
+      "case": "Independent final source match has low tracking and ball quality",
+      "handling": "No tuning after final evaluation. Preserve failed release gates and collect more independent development matches for a subsequent frozen evaluation."
+    }
+  ],
+  "limitations": [
+    "Legacy training footage source-match overlap with GSR cannot be certified.",
+    "Only one short GSR clip per source partition; not full-match validation.",
+    "No independently human-reviewed possession-change or broadcast eligibility/replay labels.",
+    "Observed control and visible-group geometry cannot establish whole-team tactical intent.",
+    "Checkpoint artifacts are local; reproduce using documented training commands."
+  ]
+}

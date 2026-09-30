@@ -1,0 +1,345 @@
+{
+  "status": "experimental",
+  "date": "2026-09-30",
+  "hardware": "Apple M4 Pro, local Metal/MPS (not Colab CUDA)",
+  "smoke": {
+    "clip": "08fd33_4.mp4",
+    "summary": {
+      "schema_version": 1,
+      "status": "experimental",
+      "sampled_frames": 300,
+      "durations": {
+        "sampled_seconds": 30.0,
+        "eligible_seconds": 29.8,
+        "B": 0.40000000000000013
+      },
+      "unknown_eligible_seconds": 29.400000000000002,
+      "excluded_seconds": 0.1999999999999993,
+      "possession_coverage": 0.013422818791946314,
+      "eligible_fraction": 0.9933333333333334,
+      "observed_possession_percent": {
+        "A": 0.0,
+        "B": 100.0
+      },
+      "zone_occupancy_seconds": {
+        "A": {},
+        "B": {
+          "1": 0.40000000000000013
+        }
+      },
+      "player_zone_observation_seconds": {
+        "A": {
+          "2": 53.680000000000064,
+          "1": 188.12000000000228,
+          "0": 2.9200000000000017
+        },
+        "B": {
+          "1": 206.080000000003,
+          "2": 35.19999999999999,
+          "0": 14.28
+        }
+      },
+      "possession_changes": 0,
+      "track_observation_counts": {
+        "observed": 6979,
+        "predicted": 489
+      },
+      "team_names": {
+        "A": "Team A",
+        "B": "Team B"
+      },
+      "limitations": [
+        "Wide/replay segmentation and airborne filtering are heuristics pending independent validation.",
+        "Possession is proximity-based estimated control; possession changes are not official tackles or turnovers.",
+        "IDs are shot-local; offscreen players and predicted points are not statistical observations.",
+        "Pitch dimensions are assumed unless supplied; no full-match official statistics are inferred."
+      ]
+    },
+    "compute_seconds": 43.849139417055994,
+    "sampled_frames_per_compute_second": 6.8416394024670195,
+    "signature": {
+      "runtime_versions": {
+        "torch": "2.14.0",
+        "torchvision": "0.29.0",
+        "ultralytics": "8.3.200",
+        "numpy": "2.5.3",
+        "scipy": "1.18.1",
+        "opencv-python": "5.0.0.93",
+        "lap": "0.5.12",
+        "shapely": "2.1.2",
+        "lsq-ellipse": "2.2.1"
+      },
+      "video_sha256": "077985a55b61fe2ca413221c082711655b7ba736a3bbd8ff97b4dfc0e5b03c57",
+      "model_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+      "config": {
+        "sample_hz": 10.0,
+        "imgsz": 1280,
+        "pitch_length": 105.0,
+        "pitch_width": 68.0,
+        "calibration_hz": 2.0,
+        "max_reprojection_px": 8.0,
+        "prediction_seconds": 1.0,
+        "possession_persistence": 0.5,
+        "possession_radius_m": 2.5,
+        "ambiguity_margin_m": 1.0,
+        "max_ball_speed_mps": 40.0,
+        "team_margin": 0.15,
+        "cut_threshold": 0.55,
+        "grass_fraction": 0.2,
+        "min_players": 6,
+        "pressure_window": 30.0,
+        "replay_distance": 3,
+        "replay_confirm_samples": 10
+      },
+      "metadata": {},
+      "max_seconds": null,
+      "device": "mps",
+      "code_hashes": {
+        "__init__.py": "d6f40bda63fc3be7432ca9d3cba5f7894093ee8f45b08d42150eac6bf86857d7",
+        "__main__.py": "ffb24997aab0ce4ac5802bd49b34fe5ebf302247db21771bd1772beeed7b0943",
+        "calibration.py": "1eb91bb43e488a675da854a3edd810a2b6edc47591eaf89b7e3e6fe1aac28f25",
+        "config.py": "ed5b30eb3b6d5f54910decef22bf2e1fd625c0a8fe8180a170db688ceb5f5b99",
+        "evaluation.py": "ae7442bad3f925120c4685d94b6d7eae8641d0c801d61bfcae207d5c8185001d",
+        "hashing.py": "85a01f49680a8bdcb45c963f2b4ca1c7a8914950157ee13ba5a956705638e384",
+        "media.py": "ee254b027bfac74330a6541721d176fa54b86973371d8e87383aba9bfd1dd745",
+        "pipeline.py": "f494562ce53fb3457af237ac78bb4761123b1e657fab1e73a60c3d8df58a742a",
+        "pnl_worker.py": "971dfaeea28e1aa6a9a0175a57050ca91d396c23d5751ec7d452fb049c8c4b47",
+        "state.py": "c7847a8dafb4642e73c18e0a3898ae14e03b3ae293b1cceca5c8e46cd3923d50",
+        "summary.py": "c0ec161a2970a8f8b83ee621ce688330d637fbf183145d63fd2e91d3cf67570a",
+        "vision.py": "31ec3b7f70ed2da6a119d27be9afa2a5f82258d51956db611a43415c9f85c004"
+      },
+      "pitch_assets_sha256": "6269be71ea3fbc4c369b4e66369feabe202c73b23399fe6424e88705752e5ad6"
+    }
+  },
+  "public_development": {
+    "dataset": "SoccerNet GSR 2024",
+    "dataset_revision": "3cc710eb6d53a23350a3d2863311c1c0a2e645d7",
+    "official_source_split": "valid",
+    "frozen_repository_partition": "development",
+    "source_label_sha256": "caa65b1f251e23e24a892f3b2773a9a74e068669843a5649b16ea3e319d740de",
+    "evaluation": {
+      "status": "experimental",
+      "partition": "development",
+      "clip_id": "SNGS-033",
+      "match_id": "SoccerNet-GSR-game-2",
+      "evaluation_code_sha256": "ae7442bad3f925120c4685d94b6d7eae8641d0c801d61bfcae207d5c8185001d",
+      "annotation_sha256": "e1ba5290c1ecedbcf6facf744c76f68367a3f99b28121d4bf363373de36b1f5a",
+      "partition_sha256": "077733b69c1b41b8518e151705e45b1eb97a990bb40ab7134efdfd14e24a05ae",
+      "run_signature": {
+        "runtime_versions": {
+          "torch": "2.14.0",
+          "torchvision": "0.29.0",
+          "ultralytics": "8.3.200",
+          "numpy": "2.5.3",
+          "scipy": "1.18.1",
+          "opencv-python": "5.0.0.93",
+          "lap": "0.5.12",
+          "shapely": "2.1.2",
+          "lsq-ellipse": "2.2.1"
+        },
+        "video_sha256": "241d3fa03447d0a5e5b2ebd60367b3e9e097e275a4bf09e6e8ae1c43ce218176",
+        "model_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+        "config": {
+          "sample_hz": 10.0,
+          "imgsz": 1280,
+          "pitch_length": 105.0,
+          "pitch_width": 68.0,
+          "calibration_hz": 2.0,
+          "max_reprojection_px": 8.0,
+          "prediction_seconds": 1.0,
+          "possession_persistence": 0.5,
+          "possession_radius_m": 2.5,
+          "ambiguity_margin_m": 1.0,
+          "max_ball_speed_mps": 40.0,
+          "team_margin": 0.15,
+          "cut_threshold": 0.55,
+          "grass_fraction": 0.2,
+          "min_players": 6,
+          "pressure_window": 30.0,
+          "replay_distance": 3,
+          "replay_confirm_samples": 10
+        },
+        "metadata": {},
+        "max_seconds": null,
+        "device": "mps",
+        "code_hashes": {
+          "__init__.py": "d6f40bda63fc3be7432ca9d3cba5f7894093ee8f45b08d42150eac6bf86857d7",
+          "__main__.py": "ffb24997aab0ce4ac5802bd49b34fe5ebf302247db21771bd1772beeed7b0943",
+          "calibration.py": "1eb91bb43e488a675da854a3edd810a2b6edc47591eaf89b7e3e6fe1aac28f25",
+          "config.py": "ed5b30eb3b6d5f54910decef22bf2e1fd625c0a8fe8180a170db688ceb5f5b99",
+          "evaluation.py": "ae7442bad3f925120c4685d94b6d7eae8641d0c801d61bfcae207d5c8185001d",
+          "hashing.py": "85a01f49680a8bdcb45c963f2b4ca1c7a8914950157ee13ba5a956705638e384",
+          "media.py": "ee254b027bfac74330a6541721d176fa54b86973371d8e87383aba9bfd1dd745",
+          "pipeline.py": "f494562ce53fb3457af237ac78bb4761123b1e657fab1e73a60c3d8df58a742a",
+          "pnl_worker.py": "971dfaeea28e1aa6a9a0175a57050ca91d396c23d5751ec7d452fb049c8c4b47",
+          "state.py": "c7847a8dafb4642e73c18e0a3898ae14e03b3ae293b1cceca5c8e46cd3923d50",
+          "summary.py": "c0ec161a2970a8f8b83ee621ce688330d637fbf183145d63fd2e91d3cf67570a",
+          "vision.py": "31ec3b7f70ed2da6a119d27be9afa2a5f82258d51956db611a43415c9f85c004"
+        },
+        "pitch_assets_sha256": "6269be71ea3fbc4c369b4e66369feabe202c73b23399fe6424e88705752e5ad6"
+      },
+      "annotated_frames": 300,
+      "metrics": {
+        "tracking_idf1": 0.5390370852309694,
+        "identity_counts": {
+          "IDTP": 1657,
+          "IDFN": 1525,
+          "IDFP": 1309
+        },
+        "team_accuracy_on_assigned": 0.9689655172413794,
+        "team_assignment_coverage_on_matches": 0.40502793296089384,
+        "median_player_pitch_error_metres": 0.6201607379791916,
+        "pitch_matched_observations": 1795,
+        "pitch_projection_coverage_on_matches": 0.839177185600748,
+        "team_mapping": {
+          "B": "left",
+          "A": "right"
+        },
+        "raw_ball_precision": 0.18407960199004975,
+        "raw_ball_recall": 0.12937062937062938,
+        "ball_precision": 0.4523809523809524,
+        "ball_recall": 0.06643356643356643,
+        "possession_coverage_on_eligible_annotations": null,
+        "segmentation_confusion_counts": {},
+        "transitions": null
+      },
+      "release_targets_met": {
+        "tracking_idf1": false,
+        "team_accuracy_on_assigned": true,
+        "median_player_pitch_error_metres": true,
+        "transition_precision": false,
+        "transition_recall": false
+      },
+      "limitations": [
+        "Per-clip identity assignment on IoU >=0.5, not SoccerNet official GS-HOTA.",
+        "A single clip cannot certify a full release; aggregate held-out source matches and inspect failures.",
+        "Missing labels remain unmeasured; ball-action labels do not imply possession-change ground truth."
+      ]
+    },
+    "summary": {
+      "schema_version": 1,
+      "status": "experimental",
+      "sampled_frames": 300,
+      "durations": {
+        "sampled_seconds": 30.0,
+        "eligible_seconds": 18.84
+      },
+      "unknown_eligible_seconds": 18.84,
+      "excluded_seconds": 11.16,
+      "possession_coverage": 0.0,
+      "eligible_fraction": 0.628,
+      "observed_possession_percent": {
+        "A": null,
+        "B": null
+      },
+      "zone_occupancy_seconds": {
+        "A": {},
+        "B": {}
+      },
+      "player_zone_observation_seconds": {
+        "A": {
+          "1": 93.60000000000021,
+          "2": 1.399999999999999,
+          "0": 1.6399999999999935
+        },
+        "B": {
+          "1": 18.239999999999995,
+          "2": 1.7600000000000022,
+          "0": 0.120000000000001
+        }
+      },
+      "possession_changes": 0,
+      "track_observation_counts": {
+        "observed": 2966,
+        "predicted": 385
+      },
+      "team_names": {
+        "A": "Team A",
+        "B": "Team B"
+      },
+      "limitations": [
+        "Wide/replay segmentation and airborne filtering are heuristics pending independent validation.",
+        "Possession is proximity-based estimated control; possession changes are not official tackles or turnovers.",
+        "IDs are shot-local; offscreen players and predicted points are not statistical observations.",
+        "Pitch dimensions are assumed unless supplied; no full-match official statistics are inferred."
+      ]
+    },
+    "observation_counts": {
+      "calibration_valid_samples": 189,
+      "observed_ball_samples": 42,
+      "predicted_ball_samples": 77
+    },
+    "compute_seconds": 33.15413883398287,
+    "sampled_frames_per_compute_second": 9.048644017032984,
+    "failure_examples": [
+      {
+        "timestamp": 0.0,
+        "source_frame": 0,
+        "failure": "Publicly labeled ball not matched by any detector box at IoU >=0.5",
+        "ground_truth_bbox": [
+          1421,
+          408,
+          1429,
+          416
+        ]
+      },
+      {
+        "timestamp": 0.12,
+        "source_frame": 3,
+        "failure": "Publicly labeled ball not matched by any detector box at IoU >=0.5",
+        "ground_truth_bbox": [
+          1421,
+          408,
+          1429,
+          416
+        ]
+      },
+      {
+        "timestamp": 0.2,
+        "source_frame": 5,
+        "failure": "Publicly labeled ball not matched by any detector box at IoU >=0.5",
+        "ground_truth_bbox": [
+          1429,
+          404,
+          1436,
+          410
+        ]
+      },
+      {
+        "timestamp": 1.0,
+        "source_frame": 25,
+        "failure": "Pitch coordinates absent",
+        "calibration_method": "excluded_view",
+        "view": {
+          "cut": false,
+          "view": "unsuitable",
+          "grass_fraction": 0.6745138888888889,
+          "eligible_view": false,
+          "reason": "insufficient_field_visibility"
+        }
+      }
+    ]
+  },
+  "verification": {
+    "unittest_count": 21,
+    "all_passed": true,
+    "notebook_code_cells_compile": true,
+    "browser": [
+      "Actual H.264 video loads",
+      "Seeking actual video to 2s updates pitch to 2s",
+      "Event-click test fixture seeks to supporting interval at61.3s and loads 60s window",
+      "Seeking fixture back to2s preserves clock",
+      "No browser errors observed"
+    ],
+    "synthetic_test_fixtures_are_not_benchmark_evidence": true
+  },
+  "remaining_release_gates": [
+    "Tracking target unmet on public development clip",
+    "Weak ball detection and insufficient observed possession coverage",
+    "Independent human eligible/replay/control-change annotations not supplied",
+    "Held-out validation/evaluation source matches still need assembling and review",
+    "No cloud GPU allocated in this session; Colab/Kaggle throughput unmeasured",
+    "Replay/wide-view and airborne heuristics unvalidated"
+  ],
+  "ffmpeg_version": "ffmpeg version 8.1.1 Copyright (c) 2000-2026 the FFmpeg developers"
+}
