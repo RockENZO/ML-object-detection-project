@@ -12,6 +12,7 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
+from match_analysis.hashing import digest
 from match_analysis.media import VideoServer
 from match_analysis.summary import load_frames
 
@@ -31,7 +32,25 @@ summary = json.loads((run / "summary.json").read_text())
 st.warning(
     "Experimental estimates. Predictions are visual aids. Missing/replay/uncertain observations do not contribute to statistics."
 )
-video = st.sidebar.text_input("Local MP4", manifest["video"])
+video = st.sidebar.text_input("Local MP4", manifest["video"], key="video_" + str(run))
+
+
+@st.cache_data
+def video_hash(path, size, modified):
+    return digest(path)
+
+
+source = Path(video)
+if not source.is_file():
+    st.error("Select the original local MP4 for this analysis.")
+    st.stop()
+stat = source.stat()
+if (
+    video_hash(str(source.resolve()), stat.st_size, stat.st_mtime_ns)
+    != manifest["signature"]["video_sha256"]
+):
+    st.error("Video hash differs from this analysis. Select the original analyzed MP4.")
+    st.stop()
 
 
 @st.cache_resource
@@ -60,6 +79,11 @@ except ValueError as error:
     st.stop()
 trends = json.loads((run / "trends.json").read_text())
 events = json.loads((run / "events.json").read_text())
+coaching = (
+    json.loads((run / "coaching.json").read_text())
+    if (run / "coaching.json").exists()
+    else None
+)
 result = player(
     video_url=url,
     frames=window_frames(str(run), (run / "summary.json").stat().st_mtime, window),
@@ -69,6 +93,7 @@ result = player(
     length=config["pitch_length"],
     width=config["pitch_width"],
     events=events,
+    coaching=coaching["records"] if coaching else [],
     trends=trends,
     seek=seek,
     key=str(run),
@@ -127,6 +152,8 @@ st.write(
 )
 st.subheader("Artifacts")
 for name in (
+    "coaching.json",
+    "coaching.csv",
     "tracks.csv",
     "events.csv",
     "events.json",
@@ -134,6 +161,8 @@ for name in (
     "trends.json",
     "manifest.json",
 ):
+    if not (run / name).exists():
+        continue
     st.download_button(
         name,
         (run / name).read_bytes(),

@@ -25,6 +25,20 @@ def freeze(sources, output):
     if len({r["clip_id"] for r in records}) != len(records):
         raise ValueError("Duplicate clip IDs")
     # Stable hashing means adding clips from an existing match cannot change its split.
+    assigned_partitions = {}
+    for record in records:
+        choice = record.get("requested_partition")
+        if choice is not None and choice not in (
+            "development",
+            "validation",
+            "evaluation",
+        ):
+            raise ValueError("Invalid requested partition")
+        if choice is not None:
+            previous = assigned_partitions.get(record["match_id"])
+            if previous is not None and previous != choice:
+                raise ValueError("One match cannot span partitions")
+            assigned_partitions[record["match_id"]] = choice
     for record in records:
         value = (
             int(
@@ -38,11 +52,19 @@ def freeze(sources, output):
         record["partition"] = (
             "development" if value < 6 else "validation" if value < 8 else "evaluation"
         )
+        record["partition"] = assigned_partitions.get(
+            record["match_id"], record["partition"]
+        )
         for field in ("video", "annotations"):
             if field in record:
                 record[field] = str(Path(record[field]).resolve())
                 record[field + "_sha256"] = digest(record[field])
-    result = {"schema_version": 1, "seed": "football-v1", "sources": records}
+    result = {
+        "schema_version": 1,
+        "seed": "football-v1",
+        "match_overrides": assigned_partitions,
+        "sources": records,
+    }
     output.write_text(json.dumps(result, indent=2) + "\n")
     return result
 
@@ -54,13 +76,15 @@ def iou(a, b):
     return x * y / union if union > 0 else 0
 
 
-def match_boxes(truth, predicted):
+def match_boxes(truth, predicted, role_sensitive=True):
     if not truth or not predicted:
         return []
     scores = np.array(
         [
             [
-                iou(a["bbox"], b["bbox"]) if a["role"] == b["role"] else 0
+                iou(a["bbox"], b["bbox"])
+                if not role_sensitive or a["role"] == b["role"]
+                else 0
                 for b in predicted
             ]
             for a in truth
@@ -117,6 +141,8 @@ def evaluate(run, annotations, partition, output):
         raise ValueError("Finish or resume analysis before evaluating")
     frames = {f["frame_index"]: f for f in load_frames(run)}
     pairs = Counter()
+    role_pairs = Counter()
+    role_correct = role_matches = 0
     ngt = npred = assigned = teamright = teamtotal = ballgt = ballpred = balltp = 0
     raw_ball_gt = raw_ball_pred = raw_ball_tp = 0
     position = []
@@ -149,10 +175,14 @@ def evaluate(run, annotations, partition, output):
             npred += len(observed)
             for a in actual:
                 for b in observed:
-                    if a["role"] == b["role"] and iou(a["bbox"], b["bbox"]) >= 0.5:
+                    if iou(a["bbox"], b["bbox"]) >= 0.5:
+                        if a["role"] == b["role"]:
+                            role_pairs[(str(a["id"]), b["id"])] += 1
                         pairs[(str(a["id"]), b["id"])] += 1
-            for i, j in match_boxes(actual, observed):
+            for i, j in match_boxes(actual, observed, role_sensitive=False):
                 a, b = actual[i], observed[j]
+                role_matches += 1
+                role_correct += a["role"] == b["role"]
                 if a["role"] == "player" and a.get("xy") is not None:
                     pitch_possible += 1
                 if a.get("team") and a["role"] == "player":
@@ -217,15 +247,34 @@ def evaluate(run, annotations, partition, output):
         rows, cols = linear_sum_assignment(-counts)
         idtp = int(counts[rows, cols].sum())
     idf1 = 2 * idtp / (ngt + npred) if ngt + npred else None
+    role_idtp = 0
+    if ids and tracks:
+        role_counts = np.array([[role_pairs[(a, b)] for b in tracks] for a in ids])
+        rows, cols = linear_sum_assignment(-role_counts)
+        role_idtp = int(role_counts[rows, cols].sum())
+    predicted_events = json.loads((run / "events.json").read_text())
+    if gt.get("transitions_use_ground_truth_team_labels"):
+        predicted_events = [
+            {
+                **e,
+                "from_team": mapping.get(e["from_team"]),
+                "to_team": mapping.get(e["to_team"]),
+            }
+            for e in predicted_events
+        ]
     changes = (
-        transition_metrics(
-            gt["transitions"], json.loads((run / "events.json").read_text())
-        )
+        transition_metrics(gt["transitions"], predicted_events)
         if "transitions" in gt
         else None
     )
     metrics = {
         "tracking_idf1": idf1,
+        "role_sensitive_tracking_idf1": 2 * role_idtp / (ngt + npred)
+        if ngt + npred
+        else None,
+        "role_accuracy_on_matches": role_correct / role_matches
+        if role_matches
+        else None,
         "identity_counts": {"IDTP": idtp, "IDFN": ngt - idtp, "IDFP": npred - idtp},
         "team_accuracy_on_assigned": teamright / assigned if assigned else None,
         "team_assignment_coverage_on_matches": assigned / teamtotal
@@ -278,7 +327,7 @@ def evaluate(run, annotations, partition, output):
         "metrics": metrics,
         "release_targets_met": gates,
         "limitations": [
-            "Per-clip identity assignment on IoU >=0.5, not SoccerNet official GS-HOTA.",
+            "Person IDF1 uses geometry at IoU >=0.5; role-sensitive legacy IDF1 and role accuracy are reported separately. Not official GS-HOTA.",
             "A single clip cannot certify a full release; aggregate held-out source matches and inspect failures.",
             "Missing labels remain unmeasured; ball-action labels do not imply possession-change ground truth.",
         ],

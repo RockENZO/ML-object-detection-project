@@ -24,17 +24,26 @@ class TeamAssigner:
         if self.centers is None:
             self.samples.append(colour)
             self.samples = self.samples[-300:]
-            if len(self.samples) < 30:
+            if len(self.samples) < 120:
                 return None
             samples = np.array(self.samples)
-            centers = samples[
-                [0, np.argmax(np.linalg.norm(samples - samples[0], axis=1))]
-            ]
+            # Warm up across multiple frames and seed from dense colour groups.
+            # A stray referee/advertising crop must not seed an entire team.
+            distances = np.linalg.norm(samples[:, None] - samples[None, :], axis=2)
+            dense = np.flatnonzero(
+                np.sum(distances < 0.25, axis=1) >= 0.15 * len(samples)
+            )
+            if len(dense) < 2:
+                return None
+            a, b = np.unravel_index(
+                np.argmax(distances[np.ix_(dense, dense)]), (len(dense), len(dense))
+            )
+            centers = samples[dense[[a, b]]]
             for _ in range(20):
                 labels = np.argmin(
                     np.linalg.norm(samples[:, None] - centers[None, :], axis=2), axis=1
                 )
-                if any(np.sum(labels == i) < 5 for i in range(2)):
+                if any(np.sum(labels == i) < 0.15 * len(samples) for i in range(2)):
                     return None
                 updated = np.array(
                     [np.median(samples[labels == i], axis=0) for i in range(2)]
@@ -143,3 +152,46 @@ class Possession:
             }
         self.stable, self.previous_end = team, t
         return team, event
+
+
+class BallSelector:
+    """Select measured candidates using motion evidence; abstain on competing balls."""
+
+    def __init__(self, motion, acquire=0.75, margin=0.15):
+        self.motion, self.acquire, self.margin = motion, acquire, margin
+
+    def select(self, candidates, t):
+        valid = [c for c in candidates if c.get("xy") is not None]
+        if not valid:
+            return None, "no_mapped_ball_candidate"
+        prior = self.motion.history.get("ball")
+        recent = prior is not None and 0 < t - prior[0] <= self.motion.expiry
+        if recent:
+            dt = t - prior[0]
+            limit = self.motion.max_speed * dt + 1.0
+            valid = [c for c in valid if math.dist(c["xy"], prior[1]) <= limit]
+            if not valid:
+                return None, "inconsistent_ball_motion"
+            expected = np.asarray(prior[1]) + np.asarray(prior[2]) * dt
+            valid.sort(
+                key=lambda c: (
+                    c["confidence"]
+                    - 0.25 * min(math.dist(c["xy"], expected) / max(limit, 1), 2)
+                ),
+                reverse=True,
+            )
+        else:
+            valid = [c for c in valid if c["confidence"] >= self.acquire]
+            if not valid:
+                return None, "low_reacquisition_confidence"
+            valid.sort(key=lambda c: c["confidence"], reverse=True)
+        first = valid[0]
+        for other in valid[1:]:
+            if (
+                math.dist(first["xy"], other["xy"]) > 1
+                and abs(first["confidence"] - other["confidence"]) < self.margin
+            ):
+                return None, "ambiguous_ball_candidates"
+        if not self.motion.observe("ball", first["xy"], t):
+            return None, "inconsistent_ball_motion"
+        return first, "observed_motion_supported" if recent else "observed_reacquired"

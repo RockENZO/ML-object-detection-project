@@ -16,7 +16,7 @@ from prepare_grouped_split import NAMES
 from .calibration import PitchMapper
 from .config import Config
 from .hashing import digest
-from .state import Motion, Possession, TeamAssigner
+from .state import BallSelector, Motion, Possession, TeamAssigner
 from .summary import summarize, validate_metadata
 from .vision import Segmenter, colour
 
@@ -32,7 +32,7 @@ def atomic_json(path, value):
 
 
 class Detector:
-    def __init__(self, checkpoint, device, config):
+    def __init__(self, checkpoint, device, config, ball_checkpoint=None):
         import ultralytics
         import yaml
         from ultralytics import YOLO
@@ -41,6 +41,14 @@ class Detector:
         self.model = YOLO(str(checkpoint))
         if list(self.model.names.values()) != NAMES:
             raise ValueError("A trained four-class football checkpoint is required")
+        self.ball_model = YOLO(str(ball_checkpoint)) if ball_checkpoint else None
+        if (
+            self.ball_model is not None
+            and list(self.ball_model.names.values()) != NAMES
+        ):
+            raise ValueError(
+                "Ball adaptation checkpoint must use the same four classes"
+            )
         self.device, self.config = device, config
         import torch
 
@@ -54,15 +62,31 @@ class Detector:
                 Path(ultralytics.__file__).parent / "cfg/trackers/botsort.yaml"
             ).read_text()
         )
+        args.update(
+            track_high_thresh=config.tracker_high_thresh,
+            track_low_thresh=config.tracker_low_thresh,
+            new_track_thresh=config.tracker_new_thresh,
+            track_buffer=config.tracker_buffer,
+            fuse_score=config.tracker_fuse_score,
+        )
         self.tracker = BOTSORT(SimpleNamespace(**args), frame_rate=config.sample_hz)
 
     def reset(self):
         self.tracker.reset()
 
     def predict(self, frame):
-        return self.model.predict(
-            frame, imgsz=self.config.imgsz, device=self.device, conf=0.15, verbose=False
-        )[0]
+        from .detection import predict
+
+        return predict(
+            self.model,
+            frame,
+            self.device,
+            imgsz=self.config.imgsz,
+            confidence=self.config.detector_confidence,
+            tile_size=self.config.ball_tile_size if self.config.ball_tiling else 0,
+            tile_confidence=self.config.ball_confidence,
+            ball_model=self.ball_model,
+        )
 
     def track(self, detection, frame):
         people = detection.boxes[detection.boxes.cls != 0].cpu().numpy()
@@ -81,6 +105,7 @@ def analyze(
     max_seconds=None,
     detector=None,
     mapper=None,
+    ball_checkpoint=None,
 ):
     config = config or Config()
     metadata = validate_metadata(metadata or {})
@@ -91,6 +116,9 @@ def analyze(
     )
     if not video.is_file() or not checkpoint.is_file():
         raise ValueError("Video and model must exist")
+    ball_checkpoint = Path(ball_checkpoint).resolve() if ball_checkpoint else None
+    if ball_checkpoint and not ball_checkpoint.is_file():
+        raise ValueError("Ball checkpoint must exist")
     cap = cv2.VideoCapture(str(video))
     if not cap.isOpened():
         raise ValueError("Cannot decode video")
@@ -130,6 +158,7 @@ def analyze(
         "runtime_versions": packages,
         "video_sha256": digest(video),
         "model_sha256": digest(checkpoint),
+        "ball_model_sha256": digest(ball_checkpoint) if ball_checkpoint else None,
         "config": config.as_dict(),
         "metadata": metadata,
         "max_seconds": max_seconds,
@@ -195,7 +224,7 @@ def analyze(
     start = time.perf_counter()
     owned_mapper = mapper is None
     try:
-        detector = detector or Detector(checkpoint, device, config)
+        detector = detector or Detector(checkpoint, device, config, ball_checkpoint)
         manifest["runtime"]["hardware"] = getattr(detector, "hardware", "test-injected")
         atomic_json(manifest_path, manifest)
         mapper = mapper or PitchMapper(
@@ -210,6 +239,7 @@ def analyze(
     team = TeamAssigner(config.team_margin, state["team_state"])
     people_motion = Motion(config.prediction_seconds, 15)
     ball_motion = Motion(config.prediction_seconds, config.max_ball_speed_mps)
+    ball_selector = BallSelector(ball_motion, config.ball_acquire_confidence)
     possession = Possession(
         config.possession_persistence,
         config.possession_radius_m,
@@ -371,17 +401,28 @@ def analyze(
                 "observation": "unknown",
                 "airborne_uncertain": False,
             }
+            ball["reason"] = (
+                "invalid_calibration"
+                if not calibration["valid"]
+                else "no_ball_detection"
+            )
             if len(balls) and calibration["valid"]:
-                order = int(balls.conf.argmax())
-                bbox = balls.xyxy[order].cpu().numpy()
-                pixel = [float((bbox[0] + bbox[2]) / 2), float((bbox[1] + bbox[3]) / 2)]
-                xy = mapper.project(pixel)
-                if ball_motion.observe("ball", xy, timestamp):
+                candidates = []
+                for observation in raw_balls:
+                    bbox = observation["bbox"]
+                    pixel = [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]
+                    candidates.append(
+                        {**observation, "pixel": pixel, "xy": mapper.project(pixel)}
+                    )
+                chosen, reason = ball_selector.select(candidates, timestamp)
+                ball["reason"] = reason
+                if chosen:
+                    pixel = chosen["pixel"]
                     ball.update(
-                        xy=xy,
+                        xy=chosen["xy"],
                         pixel=pixel,
-                        bbox=[float(v) for v in bbox],
-                        confidence=float(balls.conf[order]),
+                        bbox=chosen["bbox"],
+                        confidence=chosen["confidence"],
                         observation="observed",
                     )
                     nearby = [
@@ -453,6 +494,9 @@ def analyze(
         )
         manifest["video_end"] = video_end
         result = summarize(output, config, metadata, video_end)
+        from .coaching import export
+
+        export(output, config)
         state["complete"] = True
         manifest["processed_samples"] = samples
         manifest["compute_seconds"] = state["compute_seconds"]

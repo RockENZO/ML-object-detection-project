@@ -52,6 +52,7 @@ Scene cuts use HSV-histogram change; grass fraction/person counts nominate wide 
 | `events.json`, `events.csv` | Change timestamps, team direction, supporting uncertainty and confirmation time |
 | `summary.json` | Covered/unknown/excluded denominators, conditional possession, counts, zones, limitations |
 | `trends.json` | 30-second covered possession and territorial-pressure series |
+| `coaching.json`, `coaching.csv` | 1 Hz observed visible-group centroid, width, depth and RMS spread; support counts and abstention reasons |
 | `heatmaps.npz` | Assigned observed player sample counts in a 21 x 14 grid |
 
 ## Public benchmark preparation
@@ -80,7 +81,7 @@ python -m match_analysis evaluate --run artifacts/gsr-run \
   --annotations artifacts/gsr/annotations.json --partition partitions.json --output evaluation.json
 ```
 
-Deterministic source-match hashes allocate development (60%), validation (20%) and evaluation (20%) groups. All clips from one match stay together. Existing partition/evaluation files cannot be overwritten. Hashes catch mutated video/labels. Expand the source manifest to enough independent matches in all partitions before certifying a release. A single public development clip is a diagnostic, never a final benchmark. Freeze event annotations after human review; keep final evaluation matches untouched by tuning.
+Deterministic source-match hashes allocate development (60%), validation (20%) and evaluation (20%) groups. All clips from one match stay together. For small deliberate studies, set `requested_partition` to development/validation/evaluation on each source before freezing. Conflicting choices within a source match are rejected. Existing partition/evaluation files cannot be overwritten. Hashes catch mutated video/labels. Expand the source manifest to enough independent matches in all partitions before certifying a release. A single public development clip is a diagnostic, never a final benchmark. Freeze event annotations after human review; keep final evaluation matches untouched by tuning.
 
 ### Annotation schema and metrics
 
@@ -101,7 +102,7 @@ Annotation JSON contains `clip_id`, `match_id`, `frames` and optionally `transit
 
 This is schema illustration, not match evidence. Frame indices must match the sampled source grid. Omit unlabeled fields instead of filling assumed ground truth. `ball:null` means genuinely absent, rather than unannotated. Include **all** reviewed transitions over the analyzed interval to measure precision/recall. Anonymous A/B team evaluation may explicitly set `team_label_permutation_invariant:true`; this evaluates clustering up to a global label swap, not correct named-team identification. Keep names/directions mapped from independently verified metadata.
 
-Tracking IDF1 uses global identity assignment from compatible same-role image boxes at IoU >=0.5. Team accuracy uses assigned matched players and reports assignment coverage. Median player pitch error reports mapped-match coverage. Raw detector and filtered observed-ball image precision/recall use IoU >=0.5 and are reported separately. Segmentation confusion counts and possession coverage require independent eligible/replay labels. Possession changes use one-to-one team-direction matching within +/-1 second, reporting precision, recall and timestamp MAE. This is the documented repository protocol, **not official SoccerNet GS-HOTA**. Aggregate independent source matches, report abstention/missing coverage and inspect failures.
+Tracking IDF1 uses global identity assignment from compatible person image boxes independent of role at IoU >=0.5. Role-sensitive legacy IDF1 and matched role accuracy are reported separately; changing this definition is not a model improvement. Team accuracy uses assigned matched players and reports assignment coverage. Median player pitch error reports mapped-match coverage. Raw detector and filtered observed-ball image precision/recall use IoU >=0.5 and are reported separately. Segmentation confusion counts and possession coverage require independent eligible/replay labels. Possession changes use one-to-one team-direction matching within +/-1 second, reporting precision, recall and timestamp MAE. This is the documented repository protocol, **not official SoccerNet GS-HOTA**. Aggregate independent source matches, report abstention/missing coverage and inspect failures.
 
 Release targets: IDF1 >=0.75; assigned team accuracy >=90%; median player pitch error <=2 m; change precision >=0.85 and recall >=0.70 at +/-1 second. Missing or unmet metrics keep the release experimental. Do not update resume/profile accuracy or full-match runtime claims until independent results support them.
 
@@ -117,6 +118,82 @@ Actual cloud throughput is a separate gate: allocate a Colab/Kaggle GPU, run the
 
 ## Measured development result (2026-09-30)
 
-On public GSR SNGS-033 (one 30-second development clip, not final evaluation): IDF1 **0.539**; assigned team accuracy **96.9% at 40.5% assignment coverage**; median player pitch error **0.62 m at 83.9% projection coverage on matched players**. Raw ball precision/recall were **18.4%/12.9%**; filtered observed-ball precision/recall were **45.2%/6.6%**. Observed possession coverage was **0%** on that clip, so no transition accuracy claim is supported.
+On public GSR SNGS-033 (one 30-second development clip, not final evaluation): legacy role-sensitive IDF1 **0.539** (geometry-only IDF1 **0.585** on the same saved run); assigned team accuracy **96.9% at 40.5% assignment coverage**; median player pitch error **0.62 m at 83.9% projection coverage on matched players**. Raw ball precision/recall were **18.4%/12.9%**; filtered observed-ball precision/recall were **45.2%/6.6%**. Observed possession coverage was **0%** on that clip, so no transition accuracy claim is supported.
 
 The existing 30-second smoke video processed 300 samples in **43.85 seconds** on an Apple M4 Pro using MPS (startup included, 6.84 sampled frames/s). This is a local measurement; cloud throughput and full-match time remain unmeasured. The complete hashes, actual durations, failure examples and experimental gates are in [match_analysis_results.json](match_analysis_results.json). The pipeline can be demonstrated as an engineering implementation; accuracy claims must await the missing independent evaluation gates.
+
+
+## Broadcast coaching iteration
+
+The broadcast profile adds overlapping native-pixel ball crops, class-aware NMS, development-selected BoT-SORT association thresholds and motion-supported ball selection. Full-frame class filters are reset explicitly after crop calls. A second four-class adaptation checkpoint can supply **ball detections only**, preserving the original person detector. Both checkpoint hashes are recorded and checked on resume:
+
+```bash
+python -m match_analysis analyze --video artifacts/gsr-v2/SNGS-041.mp4 \
+  --checkpoint runs/performance-study/improved/weights/best.pt \
+  --ball-checkpoint runs/broadcast-adaptation/weights/best.pt \
+  --pitch-root artifacts/pnlcalib --config configs/match.json \
+  --device 0 --output artifacts/coaching
+```
+
+The adapted checkpoint is a local artifact. Reproduce it with the tools below; it is not bundled or silently downloaded. Omit `--ball-checkpoint` to use one checkpoint. Tiling increases compute cost; publish measured throughput with the profile. Automatic jersey clustering waits for 120 measured torso colours and seeds from dense groups, reducing isolated-colour contamination. Teams remain anonymous colour groups, and goalkeepers remain unassigned.
+
+The synchronized coaching panel shows ball evidence/rejection reasons and **visible-group** width, depth, centroid and spread. It requires 6–10 confidently detected, observed, assigned outfield players per team; otherwise geometry is withheld with a reason. Predicted players never fill that requirement. These figures cannot establish full formations, defensive lines, running distance, pressing intent or official statistics. Offscreen players are unknown.
+
+### Frozen adaptation recipe
+
+Download/convert SNGS-033, SNGS-041 and SNGS-079 using the public preparation commands above. Reserve source game 2 for development, game 3 for validation and game 5 for final evaluation **before looking at final results**. A source record can include `requested_partition`. Freeze video and converted annotation hashes. Create an adaptation-source JSON list with `clip_id` and `labels` paths for development/validation only:
+
+```json
+[
+  {"clip_id":"SNGS-033","labels":"artifacts/gsr/SNGS-033/Labels-GameState.json"},
+  {"clip_id":"SNGS-041","labels":"artifacts/gsr-v2/SNGS-041/Labels-GameState.json"}
+]
+```
+
+```bash
+python tools/prepare_broadcast_adaptation.py --help
+python tools/prepare_broadcast_adaptation.py \
+  --sources artifacts/gsr-v2/adaptation-sources.json \
+  --partition artifacts/gsr-v2/frozen-partitions.json \
+  --previous artifacts/performance-study/augmented --output artifacts/broadcast-adaptation
+python tools/train_broadcast_adaptation.py \
+  --dataset artifacts/broadcast-adaptation/dataset.yaml \
+  --checkpoint runs/performance-study/improved/weights/best.pt \
+  --run runs/broadcast-adaptation --device 0 --epochs 8
+```
+
+Training uses development full frames plus native 320-pixel ball crops and retains the previous training set. Validation is a different GSR source match, with no training crops. Evaluation sources are rejected. This study has only one GSR match per partition. Legacy Roboflow training source-match identities are not fully known, so independence from **all historical training matches cannot be certified**. Random seeds and hashes support auditing; different hardware/runtime/JPEG encoding may produce different weight hashes.
+
+Detection/tracking tuning commands require `--partition` and refuse anything except frozen development data:
+
+```bash
+python tools/study_broadcast_detection.py --video artifacts/gsr/SNGS-033.mp4 \
+  --annotations artifacts/gsr/annotations.json --checkpoint /path/to/best.pt \
+  --partition artifacts/gsr-v2/frozen-partitions.json --output artifacts/detection-study.json --device 0
+python tools/study_broadcast_tracking.py --video artifacts/gsr/SNGS-033.mp4 \
+  --annotations artifacts/gsr/annotations.json --detections artifacts/detection-study.json \
+  --partition artifacts/gsr-v2/frozen-partitions.json --output artifacts/tracker-study.json
+```
+
+### Independent temporal ground truth
+
+```bash
+python -m streamlit run dashboard/review_annotations.py -- \
+  --video artifacts/gsr-v2/SNGS-041.mp4 \
+  --annotations artifacts/gsr-v2/validation-annotations.json
+```
+
+This separate interface displays only source video. A human reviewer marks eligible/replay/ineligible/uncertain intervals and the first supported control-change times using the video clock, independently identifying the two jersey teams. Every analyzed sample needs an interval; uncertain intervals remain unlabelled. Export requires reviewer identity and complete-video-review confirmation. Browser verification actions are not human ground truth and are never exported as benchmark labels.
+
+Freeze reviewed annotations in a **new** partition manifest, preserving the prior spatial benchmark evidence. Set `transitions_use_ground_truth_team_labels:true` for events using independent named/left/right labels; evaluation maps anonymous predictions into that label space. No event accuracy or segmentation accuracy is claimed until independent review is complete.
+
+Actual checkpoint comparisons, selected profile, source hashes, coverage and remaining release gates are reported in [coaching_iteration_results.json](coaching_iteration_results.json). The coach-facing panel is an experimental review aid; unmet quality/coverage gates prevent a claim of validated coaching analysis.
+
+
+### Measured outcome of this iteration
+
+Validation SNGS-041: the combined profile preserved person IDF1 **0.692**, increased assigned team accuracy **73.0% → 97.1%** (assignment coverage **55.8% → 75.5%**), and increased raw ball precision/recall **17.2%/9.0% → 30.7%/30.1%**. All-class adaptation alone reduced person IDF1 to **0.600**, so it was not selected for people. This comparison uses the same 300 source frames and geometry-only tracking protocol.
+
+After locking the profile, final SNGS-079 produced person IDF1 **0.470**, assigned team accuracy **96.3%** at **70.0%** coverage, median pitch error **0.52 m** at **87.0%** matched projection coverage, raw ball precision/recall **14.0%/17.3%**, and filtered observed-ball precision/recall **17.9%/7.3%**. Estimated control covered **3.2%** of heuristically eligible time; its apparent 100% Team A share reflects only **0.88 seconds** and cannot describe the match. No supported control changes were emitted; precision/recall remain **unmeasured**, not perfect. The final result was not used to tune this release.
+
+The final 30-second clip required **136.10 seconds** on local MPS (~**2.20 sampled frames/s**). This includes two detectors, tiling, calibration and startup, and is not a cloud/full-match runtime estimate. Tracking and temporal coverage gates fail. The project is suitable for demonstrating reproducible experimental engineering and assisted visual review, **not certified coaching decisions or complete match statistics**.

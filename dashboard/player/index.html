@@ -1,7 +1,7 @@
 <!doctype html><html><head><meta charset="utf-8"><style>
 body{font:14px system-ui;color:#dce7ef;background:#0d1621;margin:0} .grid{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}video{width:100%;border-radius:8px}canvas{width:100%;border:1px solid #426650;border-radius:8px}button{background:#203246;color:white;border:1px solid #54728d;border-radius:5px;padding:6px;margin:3px;cursor:pointer}#status{padding:8px;background:#243246}#events{max-height:100px;overflow:auto} @media(max-width:700px){.grid{grid-template-columns:1fr}}
 </style></head><body>
-<div class="grid"><video id="video" controls preload="metadata"></video><div><canvas id="pitch" width="840" height="544"></canvas><div id="status">Waiting for analysis</div></div></div>
+<div class="grid"><video id="video" controls preload="metadata"></video><div><canvas id="pitch" width="840" height="544"></canvas><div id="status">Waiting for analysis</div><div id="coaching" style="padding:8px"></div></div></div>
 <p>Coverage strip: blue/orange = covered control · yellow = unknown eligible · gray = excluded. Blue: Team A · Orange: Team B · Gray: unassigned · White: ball · Hollow/dashed: prediction (excluded from statistics)</p>
 <div id="events"></div><canvas id="trend" width="1100" height="130" style="border-color:#425568"></canvas>
 <script>
@@ -11,6 +11,7 @@ function nearest(frames,t){let lo=0,hi=frames.length;while(lo<hi){let m=(lo+hi)>
 function draw(){if(!args)return;const t=video.currentTime, f=nearest(args.frames,t),W=args.length,H=args.width,sx=840/W,sy=544/H;
 ctx.fillStyle='#153d2a';ctx.fillRect(0,0,840,544);ctx.strokeStyle='#d0e7d5';ctx.lineWidth=2;ctx.strokeRect(5,5,830,534);ctx.beginPath();ctx.moveTo(420,5);ctx.lineTo(420,539);ctx.stroke();ctx.beginPath();ctx.ellipse(420,272,9.15*sx,9.15*sy,0,0,Math.PI*2);ctx.stroke();
 [0,W-16.5].forEach(x=>ctx.strokeRect(x*sx,(H/2-20.16)*sy,16.5*sx,40.32*sy));
+let review=nearest(args.coaching||[],t),text=[];if(review&&t-review.timestamp<=1.2){text.push('Ball: '+review.ball_status);for(const team of ['A','B']){const g=review.teams[team];text.push(g.width_m==null?`Team ${team}: ${g.observed_outfield_count} observed · ${g.reason}`:`Team ${team}: ${g.observed_outfield_count} observed · visible-group width ${g.width_m.toFixed(1)}m, depth ${g.depth_m.toFixed(1)}m`)}}document.getElementById('coaching').textContent=text.join(' | ');
 let valid=f&&t-f.timestamp<=.21&&t>=args.window_start&&t<args.window_end;
 if(valid){
 const colors={A:'#4dafff',B:'#ffad55'};

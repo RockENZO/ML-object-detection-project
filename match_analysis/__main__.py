@@ -16,6 +16,11 @@ def main(argv=None):
         analysis.add_argument("--" + name, required=True, type=Path)
     for name in ("config", "metadata", "pitch-root"):
         analysis.add_argument("--" + name, type=Path)
+    analysis.add_argument(
+        "--ball-checkpoint",
+        type=Path,
+        help="Optional four-class adaptation checkpoint for ball detections only",
+    )
     analysis.add_argument("--device", default="cpu", help="cpu, mps or CUDA device 0")
     analysis.add_argument("--resume", action="store_true")
     analysis.add_argument("--max-seconds", type=float)
@@ -48,6 +53,7 @@ def main(argv=None):
                 args.device,
                 args.resume,
                 args.max_seconds,
+                ball_checkpoint=args.ball_checkpoint,
             )
         elif args.command == "freeze":
             from .evaluation import freeze

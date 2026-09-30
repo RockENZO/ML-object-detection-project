@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><style>body{font:15px system-ui;color:#eee;background:#14202c}video{width:100%;max-height:390px}button,select{margin:5px;padding:10px;background:#30465c;color:white;border:1px solid #617e98;border-radius:5px}</style></head><body>
+<video id="video" controls preload="metadata"></video><p id="clock">0.00 s</p>
+<select id="view"><option value="eligible">Eligible wide live view</option><option value="replay">Replay</option><option value="ineligible">Ineligible close-up/other</option><option value="uncertain">Uncertain / leave unlabelled</option></select>
+<button id="start">Mark interval start</button><button id="end">Mark interval end</button><button id="ab">Observed A → B</button><button id="ba">Observed B → A</button>
+<script>
+const v=document.getElementById('video');let revision=0;const send=(type,x={})=>parent.postMessage({isStreamlitMessage:true,type,...x},'*');
+function mark(action){send('streamlit:setComponentValue',{value:{action,time:v.currentTime,view:document.getElementById('view').value,revision:++revision},dataType:'json'})}
+for(const action of ['start','end','ab','ba'])document.getElementById(action).onclick=()=>mark(action);
+v.ontimeupdate=()=>document.getElementById('clock').textContent=v.currentTime.toFixed(2)+' video seconds';
+window.addEventListener('message',e=>{if(e.data.type!=='streamlit:render')return;const a=e.data.args;if(v.getAttribute('src')!==a.video_url)v.src=a.video_url;send('streamlit:setFrameHeight',{height:550})});
+send('streamlit:componentReady',{apiVersion:1});send('streamlit:setFrameHeight',{height:550});
+</script></body></html>

@@ -65,7 +65,7 @@ class StateTests(unittest.TestCase):
 
     def test_team_cluster_persists_and_ambiguous_abstains(self):
         team = TeamAssigner()
-        for i in range(80):
+        for i in range(160):
             team.observe(str(i % 2), [0.8, 0, 0.8] if i % 2 else [-0.8, 0, 0.8])
         a = team.observe("left", [-0.8, 0, 0.8])
         team.observe("left", [-0.8, 0, 0.8])
@@ -74,6 +74,24 @@ class StateTests(unittest.TestCase):
         self.assertIsNone(team.observe("unknown", [0, 0, 0.8]))
         restored = TeamAssigner(state=team.snapshot())
         self.assertTrue(np.allclose(team.centers, restored.centers))
+
+    def test_team_initialization_rejects_sparse_colour_outliers(self):
+        team = TeamAssigner()
+        for i in range(180):
+            c = (
+                [0.6, -0.3, 0.4]
+                if i % 20 == 0
+                else ([0, 0.1, 0.7] if i % 2 else [0.4, 0.7, 0.85])
+            )
+            team.observe(str(i % 20), c)
+        self.assertIsNotNone(team.centers)
+        self.assertLess(
+            np.min(np.linalg.norm(team.centers - np.array([0, 0.1, 0.7]), axis=1)), 0.01
+        )
+        self.assertLess(
+            np.min(np.linalg.norm(team.centers - np.array([0.4, 0.7, 0.85]), axis=1)),
+            0.01,
+        )
 
     def test_cut_and_repeated_sequence_excluded(self):
         config = Config()
@@ -155,8 +173,6 @@ class StateTests(unittest.TestCase):
                     for r in json.loads((root / "trends.json").read_text())
                 )
             )
-
-
 
 
 class Array(np.ndarray):
@@ -385,6 +401,273 @@ class PlatformTests(unittest.TestCase):
             annotation.write_text(annotation.read_text() + " ")
             with self.assertRaises(ValueError):
                 evaluate(run, annotation, frozen, root / "eval.json")
+
+
+class CoachingIterationTests(unittest.TestCase):
+    def test_tiling_covers_edges_and_nms_retains_different_classes(self):
+        from match_analysis.detection import suppress, tiles
+
+        regions = tiles(1920, 1080)
+        self.assertTrue(any(x2 == 1920 and y2 == 1080 for x, y, x2, y2 in regions))
+        self.assertTrue(
+            all(0 <= x < x2 <= 1920 and 0 <= y < y2 <= 1080 for x, y, x2, y2 in regions)
+        )
+        rows = suppress(
+            [[0, 0, 10, 10, 0.8, 0], [0, 0, 10, 10, 0.7, 0], [0, 0, 10, 10, 0.7, 2]]
+        )
+        self.assertEqual(len(rows), 2)
+
+    def test_ball_candidate_ambiguity_and_motion_gate(self):
+        from match_analysis.state import BallSelector
+
+        motion = Motion()
+        selector = BallSelector(motion)
+
+        def ball(x, c=0.8):
+            return {"xy": [x, 10], "confidence": c}
+
+        selected, reason = selector.select([ball(10), ball(30, 0.79)], 0)
+        self.assertIsNone(selected)
+        self.assertEqual(reason, "ambiguous_ball_candidates")
+        selected, _ = selector.select([ball(10)], 0)
+        self.assertIsNotNone(selected)
+        selected, _ = selector.select([ball(10.5, 0.65), ball(90, 0.99)], 0.1)
+        self.assertEqual(selected["xy"], [10.5, 10])
+        motion.reset()
+        selected, _ = selector.select([ball(11, 0.65)], 2)
+        self.assertIsNone(selected)
+
+    def test_coaching_abstains_with_missing_predicted_or_duplicated_players(self):
+        from match_analysis.coaching import frame_features
+
+        frame = {
+            "timestamp": 0,
+            "shot": 0,
+            "eligible": True,
+            "ball": {"observation": "unknown"},
+            "possession": "unknown",
+            "people": [],
+        }
+        for i in range(6):
+            frame["people"].append(
+                {
+                    "id": str(i),
+                    "role": "player",
+                    "team": "A",
+                    "xy": [i * 2, i],
+                    "observation": "observed",
+                    "confidence": 0.8,
+                }
+            )
+        result = frame_features(frame, Config())
+        self.assertEqual(result["teams"]["A"]["width_m"], 5)
+        frame["people"][0]["observation"] = "predicted"
+        self.assertIsNone(frame_features(frame, Config())["teams"]["A"]["width_m"])
+        frame["people"].append(frame["people"][-1])
+        self.assertEqual(
+            frame_features(frame, Config())["teams"]["A"]["observed_outfield_count"], 5
+        )
+        frame["eligible"] = False
+        self.assertEqual(
+            frame_features(frame, Config())["teams"]["A"]["reason"], "excluded_interval"
+        )
+
+    def test_person_identity_matching_and_role_assessment_are_distinct(self):
+        from match_analysis.evaluation import match_boxes
+
+        a = [{"role": "referee", "bbox": [0, 0, 10, 20]}]
+        b = [{"role": "player", "bbox": [0, 0, 10, 20]}]
+        self.assertEqual(match_boxes(a, b), [])
+        self.assertEqual(match_boxes(a, b, role_sensitive=False), [(0, 0)])
+
+    def test_requested_partitions_cannot_split_one_match(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            p = root / "sources.json"
+            p.write_text(
+                json.dumps(
+                    [
+                        {
+                            "clip_id": "one",
+                            "match_id": "same",
+                            "requested_partition": "development",
+                        },
+                        {
+                            "clip_id": "two",
+                            "match_id": "same",
+                            "requested_partition": "evaluation",
+                        },
+                    ]
+                )
+            )
+            with self.assertRaises(ValueError):
+                freeze(p, root / "frozen.json")
+
+    def test_review_requires_explicit_coverage_and_preserves_uncertain(self):
+        from match_analysis.annotations import reviewed
+
+        truth = {"clip_id": "one", "frames": [{"timestamp": 0}, {"timestamp": 0.1}]}
+        with self.assertRaises(ValueError):
+            reviewed(truth, [], [], "human", "hash")
+        data = reviewed(
+            truth, [{"start": 0, "end": 0.2, "view": "uncertain"}], [], "human", "hash"
+        )
+        self.assertNotIn("eligible", data["frames"][0])
+        self.assertEqual(data["review"]["reviewer"], "human")
+        with self.assertRaises(ValueError):
+            reviewed(
+                truth, [{"start": 0, "end": 0.2, "view": "eligible"}], [], "", "hash"
+            )
+
+
+class EvaluationProtocolTests(unittest.TestCase):
+    def test_event_labels_are_mapped_and_identity_does_not_require_correct_role(self):
+        from match_analysis.evaluation import evaluate
+        from match_analysis.hashing import digest
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            video = root / "dummy.mp4"
+            video.write_bytes(b"behavioral fixture only")
+            gs = [
+                {"id": "r", "role": "referee", "bbox": [0, 0, 10, 20]},
+                {
+                    "id": "a",
+                    "role": "player",
+                    "team": "left",
+                    "bbox": [20, 0, 30, 20],
+                    "xy": [1, 1],
+                },
+                {
+                    "id": "b",
+                    "role": "player",
+                    "team": "right",
+                    "bbox": [40, 0, 50, 20],
+                    "xy": [10, 1],
+                },
+            ]
+            truth = {
+                "clip_id": "fixture",
+                "match_id": "fixture_match",
+                "team_mapping": {"A": "left", "B": "right"},
+                "transitions_use_ground_truth_team_labels": True,
+                "frames": [{"frame_index": 0, "people": gs}],
+                "transitions": [
+                    {"timestamp": 2, "from_team": "left", "to_team": "right"}
+                ],
+            }
+            annotations = root / "gt.json"
+            annotations.write_text(json.dumps(truth))
+            sources = root / "sources.json"
+            sources.write_text(
+                json.dumps(
+                    [
+                        {
+                            "clip_id": "fixture",
+                            "match_id": "fixture_match",
+                            "video": str(video),
+                            "annotations": str(annotations),
+                        }
+                    ]
+                )
+            )
+            partition = root / "frozen.json"
+            freeze(sources, partition)
+            run = root / "run"
+            run.mkdir()
+            (run / "shots").mkdir()
+            (run / "manifest.json").write_text(
+                json.dumps({"signature": {"video_sha256": digest(video)}})
+            )
+            (run / "checkpoint.json").write_text(json.dumps({"complete": True}))
+            ps = [
+                {
+                    **g,
+                    "id": "p" + g["id"],
+                    "role": "player" if g["id"] == "r" else g["role"],
+                    "team": None if g["id"] == "r" else "A" if g["id"] == "a" else "B",
+                    "observation": "observed",
+                }
+                for g in gs
+            ]
+            (run / "shots/000000.jsonl").write_text(
+                json.dumps(
+                    {"frame_index": 0, "people": ps, "ball": {"observation": "unknown"}}
+                )
+                + "\n"
+            )
+            (run / "events.json").write_text(
+                json.dumps([{"timestamp": 2, "from_team": "A", "to_team": "B"}])
+            )
+            result = evaluate(run, annotations, partition, root / "result.json")[
+                "metrics"
+            ]
+            self.assertEqual(result["tracking_idf1"], 1)
+            self.assertAlmostEqual(result["role_sensitive_tracking_idf1"], 2 / 3)
+            self.assertEqual(result["transitions"]["precision"], 1)
+
+
+class DetectionStateTests(unittest.TestCase):
+    def test_tile_class_filter_is_reset_on_every_full_frame(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+
+        from match_analysis.detection import predict
+
+        class Data:
+            dtype = "float32"
+            device = "cpu"
+
+            def __init__(self, rows):
+                self.rows = np.asarray(rows, dtype=float).reshape(-1, 6)
+
+            def cpu(self):
+                return self
+
+            def numpy(self):
+                return self.rows
+
+        class Result:
+            def __init__(self, rows):
+                self.boxes = SimpleNamespace(data=Data(rows))
+
+            def update(self, boxes):
+                self.boxes.data = Data(boxes)
+
+        class StatefulModel:
+            classes = None
+
+            def predict(self, source, **kwargs):
+                self.classes = kwargs.get("classes", self.classes)
+                rows = [[1, 1, 5, 5, 0.9, 0], [5, 5, 12, 20, 0.9, 2]]
+                rows = [r for r in rows if self.classes is None or r[5] in self.classes]
+                return [
+                    Result(rows)
+                    for _ in (source if isinstance(source, list) else [source])
+                ]
+
+        fake_torch = SimpleNamespace(as_tensor=lambda rows, **kwargs: rows)
+        with patch.dict("sys.modules", {"torch": fake_torch}):
+            model = StatefulModel()
+            for _ in range(2):
+                result = predict(model, np.zeros((32, 32, 3)), "cpu", tile_size=32)
+                self.assertIn(2, result.boxes.data.numpy()[:, 5])
+
+            class BallModel:
+                def predict(self, source, **kwargs):
+                    return [Result([[20, 20, 22, 22, 0.99, 0]])]
+
+            mixed = predict(
+                StatefulModel(),
+                np.zeros((32, 32, 3)),
+                "cpu",
+                tile_size=0,
+                ball_model=BallModel(),
+            )
+            boxes = mixed.boxes.data.numpy()
+            self.assertEqual(sum(boxes[:, 5] == 2), 1)
+            self.assertEqual(boxes[boxes[:, 5] == 0, 0].tolist(), [20])
+
 
 if __name__ == "__main__":
     unittest.main()
