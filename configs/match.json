@@ -1,0 +1,20 @@
+{
+  "sample_hz": 10.0,
+  "imgsz": 1280,
+  "pitch_length": 105.0,
+  "pitch_width": 68.0,
+  "calibration_hz": 2.0,
+  "max_reprojection_px": 8.0,
+  "prediction_seconds": 1.0,
+  "possession_persistence": 0.5,
+  "possession_radius_m": 2.5,
+  "ambiguity_margin_m": 1.0,
+  "max_ball_speed_mps": 40.0,
+  "team_margin": 0.15,
+  "cut_threshold": 0.55,
+  "grass_fraction": 0.2,
+  "min_players": 6,
+  "pressure_window": 30.0,
+  "replay_distance": 3,
+  "replay_confirm_samples": 10
+}

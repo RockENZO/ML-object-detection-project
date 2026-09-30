@@ -1,0 +1,33 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{font:14px system-ui;color:#dce7ef;background:#0d1621;margin:0} .grid{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}video{width:100%;border-radius:8px}canvas{width:100%;border:1px solid #426650;border-radius:8px}button{background:#203246;color:white;border:1px solid #54728d;border-radius:5px;padding:6px;margin:3px;cursor:pointer}#status{padding:8px;background:#243246}#events{max-height:100px;overflow:auto} @media(max-width:700px){.grid{grid-template-columns:1fr}}
+</style></head><body>
+<div class="grid"><video id="video" controls preload="metadata"></video><div><canvas id="pitch" width="840" height="544"></canvas><div id="status">Waiting for analysis</div></div></div>
+<p>Coverage strip: blue/orange = covered control · yellow = unknown eligible · gray = excluded. Blue: Team A · Orange: Team B · Gray: unassigned · White: ball · Hollow/dashed: prediction (excluded from statistics)</p>
+<div id="events"></div><canvas id="trend" width="1100" height="130" style="border-color:#425568"></canvas>
+<script>
+const video=document.getElementById('video'),canvas=document.getElementById('pitch'),ctx=canvas.getContext('2d');let args=null,requestPending=null,lastShot=null;
+const send=(type,extra={})=>parent.postMessage({isStreamlitMessage:true,type,...extra},'*');
+function nearest(frames,t){let lo=0,hi=frames.length;while(lo<hi){let m=(lo+hi)>>1;if(frames[m].timestamp<=t)lo=m+1;else hi=m}return frames[lo-1]}
+function draw(){if(!args)return;const t=video.currentTime, f=nearest(args.frames,t),W=args.length,H=args.width,sx=840/W,sy=544/H;
+ctx.fillStyle='#153d2a';ctx.fillRect(0,0,840,544);ctx.strokeStyle='#d0e7d5';ctx.lineWidth=2;ctx.strokeRect(5,5,830,534);ctx.beginPath();ctx.moveTo(420,5);ctx.lineTo(420,539);ctx.stroke();ctx.beginPath();ctx.ellipse(420,272,9.15*sx,9.15*sy,0,0,Math.PI*2);ctx.stroke();
+[0,W-16.5].forEach(x=>ctx.strokeRect(x*sx,(H/2-20.16)*sy,16.5*sx,40.32*sy));
+let valid=f&&t-f.timestamp<=.21&&t>=args.window_start&&t<args.window_end;
+if(valid){
+const colors={A:'#4dafff',B:'#ffad55'};
+for(const p of f.people){if(!p.xy)continue;
+ ctx.strokeStyle=colors[p.team]||'#b4bdc4';ctx.globalAlpha=.25;ctx.beginPath();let prev=null;
+ for(const old of args.frames){if(old.timestamp<t-10||old.timestamp>t||old.shot!==f.shot)continue;const q=old.people.find(q=>q.id===p.id&&q.xy&&q.observation==='observed');if(!q){prev=null;continue}if(!prev||old.timestamp-prev.timestamp>.21)ctx.moveTo(q.xy[0]*sx,q.xy[1]*sy);else ctx.lineTo(q.xy[0]*sx,q.xy[1]*sy);prev=old;}ctx.stroke();ctx.globalAlpha=1;
+ ctx.fillStyle=colors[p.team]||'#b4bdc4';ctx.strokeStyle=ctx.fillStyle;ctx.setLineDash(p.observation==='predicted'?[3,3]:[]);ctx.beginPath();ctx.arc(p.xy[0]*sx,p.xy[1]*sy,6,0,Math.PI*2);if(p.observation==='observed')ctx.fill();else ctx.stroke();ctx.setLineDash([]);
+}
+if(f.ball.xy){ctx.strokeStyle=ctx.fillStyle='white';ctx.beginPath();ctx.arc(f.ball.xy[0]*sx,f.ball.xy[1]*sy,4,0,Math.PI*2);if(f.ball.observation==='observed')ctx.fill();else ctx.stroke()}
+document.getElementById('status').textContent=`${t.toFixed(2)}s · Shot ${f.shot} · ${f.eligible?'Eligible':'Excluded'} · Control ${f.possession} · Calibration ${f.calibration.method}`;
+}else document.getElementById('status').textContent=`${t.toFixed(2)}s · Positions unavailable`;
+const tc=document.getElementById('trend'),c=tc.getContext('2d'),duration=args.duration;c.clearRect(0,0,1100,130);c.fillStyle='#172538';c.fillRect(0,0,1100,130);c.strokeStyle='#4dafff';c.beginPath();let pen=false;
+for(const r of args.trends){if(r.A_possession_share==null){pen=false;continue}const x=r.timestamp/duration*1100,y=115-r.A_possession_share*90;if(!pen)c.moveTo(x,y);else c.lineTo(x,y);pen=true}c.stroke();for(const [field,color] of [['A_territorial_pressure','#8ad9ff'],['B_territorial_pressure','#ffad55']]){c.strokeStyle=color;c.setLineDash([4,4]);c.beginPath();let pen=false;for(const r of args.trends){if(r[field]==null){pen=false;continue}let x=r.timestamp/duration*1100,y=115-r[field]*90;if(!pen)c.moveTo(x,y);else c.lineTo(x,y);pen=true}c.stroke()}c.setLineDash([]);for(let i=0;i<args.trends.length;i++){const r=args.trends[i],next=args.trends[i+1]?.timestamp||duration;c.fillStyle=!r.eligible?'#677582':r.possession==='A'?'#4dafff':r.possession==='B'?'#ffad55':'#e6c35b';c.fillRect(r.timestamp/duration*1100,120,Math.max(1,(next-r.timestamp)/duration*1100),10)}c.fillStyle='#b4bdc4';c.fillText('30s rolling covered possession share — Team A; gaps = unknown',10,16);c.strokeStyle='#fff';c.beginPath();c.moveTo(t/duration*1100,0);c.lineTo(t/duration*1100,130);c.stroke();
+if(t>=args.window_end||t<args.window_start){const window=Math.floor(t/60);if(requestPending!==window){requestPending=window;send('streamlit:setComponentValue',{value:{window,time:t},dataType:'json'})}}
+}
+window.addEventListener('message',event=>{if(event.data.type!=='streamlit:render')return;args=event.data.args;requestPending=null;
+ if(video.getAttribute('src')!==args.video_url){video.src=args.video_url;video.addEventListener('loadedmetadata',()=>{video.currentTime=args.seek||0;draw()},{once:true})}
+ const events=document.getElementById('events');events.replaceChildren();for(const e of args.events){let b=document.createElement('button');b.textContent=`${e.timestamp.toFixed(2)}s ${e.from_team} → ${e.to_team}`;b.onclick=()=>{video.currentTime=Math.max(0,e.uncertainty[0]-.5);draw()};events.append(b)}draw();send('streamlit:setFrameHeight',{height:650});});
+video.addEventListener('timeupdate',draw);video.addEventListener('seeked',draw);video.addEventListener('pause',draw);send('streamlit:componentReady',{apiVersion:1});send('streamlit:setFrameHeight',{height:650});
+</script></body></html>

@@ -1,3 +1,9 @@
+# Automatic pitch animation and match analysis
+
+An experimental offline pipeline now adds shot-local BoT-SORT tracking, pinned PnLCalib reconstruction, bounded visual predictions, observed possession/events, coverage, heatmaps and a local Streamlit dashboard with synchronized video seeking. Colab is the primary processing notebook; the CLI also runs on Kaggle.
+
+See [setup, commands, artifact schema and evaluation protocol](docs/MATCH_ANALYSIS.md), [cloud notebook](notebooks/football_analysis_colab.ipynb) and [measured development results](docs/match_analysis_results.json). Accuracy targets are release gates; unmeasured or unmet gates remain experimental. No complete official match-statistics or named-player claims are made.
+
 # Football player detection
 
 This repository contains a four-class Roboflow football dataset (ball, goalkeeper, player, referee), sample video, pretrained YOLO weights, and scripts for annotated inference and evaluation.

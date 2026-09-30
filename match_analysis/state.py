@@ -1,0 +1,145 @@
+"""Temporal state: measured team colours, bounded prediction, and possession."""
+
+import math
+from collections import defaultdict
+
+import numpy as np
+
+
+class TeamAssigner:
+    def __init__(self, margin=0.15, state=None):
+        self.margin = margin
+        self.centers = (
+            np.array(state["centers"], dtype=float)
+            if state and state.get("centers")
+            else None
+        )
+        self.samples = []
+        self.votes = defaultdict(lambda: np.zeros(2))
+
+    def observe(self, identity, colour):
+        if colour is None:
+            return None
+        colour = np.array(colour, dtype=float)
+        if self.centers is None:
+            self.samples.append(colour)
+            self.samples = self.samples[-300:]
+            if len(self.samples) < 30:
+                return None
+            samples = np.array(self.samples)
+            centers = samples[
+                [0, np.argmax(np.linalg.norm(samples - samples[0], axis=1))]
+            ]
+            for _ in range(20):
+                labels = np.argmin(
+                    np.linalg.norm(samples[:, None] - centers[None, :], axis=2), axis=1
+                )
+                if any(np.sum(labels == i) < 5 for i in range(2)):
+                    return None
+                updated = np.array(
+                    [np.median(samples[labels == i], axis=0) for i in range(2)]
+                )
+                if np.allclose(updated, centers):
+                    break
+                centers = updated
+            if np.linalg.norm(centers[0] - centers[1]) < 0.15:
+                return None
+            self.centers = centers[np.argsort(centers[:, 0])]
+        distance = np.linalg.norm(self.centers - colour, axis=1)
+        best = int(np.argmin(distance))
+        separation = (max(distance) - min(distance)) / max(max(distance), 1e-6)
+        if separation < self.margin or min(distance) > 0.45:
+            return None
+        self.votes[identity][best] += separation
+        votes = self.votes[identity]
+        return (
+            ("A", "B")[int(np.argmax(votes))]
+            if max(votes) / sum(votes) >= 0.8 and sum(votes) >= 1
+            else None
+        )
+
+    def reset_shot(self):
+        self.votes.clear()
+        self.samples.clear()
+
+    def snapshot(self):
+        return {"centers": self.centers.tolist() if self.centers is not None else None}
+
+
+class Motion:
+    def __init__(self, expiry=1.0, max_speed=40.0):
+        self.expiry, self.max_speed = expiry, max_speed
+        self.history = {}
+
+    def reset(self):
+        self.history.clear()
+
+    def observe(self, identity, xy, t):
+        if xy is None:
+            return False
+        xy = np.array(xy, dtype=float)
+        prior = self.history.get(identity)
+        if (
+            prior
+            and t > prior[0]
+            and np.linalg.norm(xy - prior[1]) / (t - prior[0]) > self.max_speed
+        ):
+            return False
+        velocity = (
+            (xy - prior[1]) / (t - prior[0]) if prior and t > prior[0] else np.zeros(2)
+        )
+        self.history[identity] = (t, xy, velocity)
+        return True
+
+    def predict(self, identity, t):
+        prior = self.history.get(identity)
+        if prior is None or t - prior[0] > self.expiry + 1e-8 or t <= prior[0]:
+            return None
+        return (prior[1] + prior[2] * (t - prior[0])).tolist()
+
+
+class Possession:
+    def __init__(self, persistence=0.5, radius=2.5, margin=1.0):
+        self.persistence, self.radius, self.margin = persistence, radius, margin
+        self.reset()
+
+    def reset(self):
+        self.candidate = self.stable = None
+        self.candidate_since = self.previous_end = None
+        self.last_time = None
+
+    def update(self, t, ball, people, eligible, airborne=False):
+        # Unknown observations deliberately break the event chain.
+        distances = []
+        if eligible and ball is not None and not airborne:
+            for person in people:
+                if person.get("xy") is not None and person["observation"] == "observed":
+                    distances.append((math.dist(ball, person["xy"]), person["team"]))
+        distances.sort(key=lambda value: value[0])
+        team = None
+        if distances and distances[0][0] <= self.radius:
+            if len(distances) == 1 or distances[1][0] - distances[0][0] >= self.margin:
+                team = distances[0][1]
+        if team is None:
+            self.reset()
+            self.last_time = t
+            return "unknown", None
+        if self.last_time is not None and t - self.last_time > 0.25:
+            self.reset()
+        self.last_time = t
+        if team != self.candidate:
+            self.candidate, self.candidate_since = team, t
+        if t - self.candidate_since + 1e-8 < self.persistence:
+            return "unknown", None
+        event = None
+        if self.stable and self.stable != team:
+            event = {
+                "type": "possession_change",
+                "from_team": self.stable,
+                "to_team": team,
+                "timestamp": self.candidate_since,
+                "uncertainty": [self.previous_end, self.candidate_since],
+                "confirmed_at": t,
+            }
+        self.stable, self.previous_end = team, t
+        return team, event

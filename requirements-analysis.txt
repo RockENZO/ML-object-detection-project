@@ -1,0 +1,11 @@
+# Python 3.12. Install the platform-appropriate PyTorch wheel separately.
+ultralytics==8.3.200
+opencv-python==5.0.0.93
+numpy==2.5.3
+scipy==1.18.1
+PyYAML==6.0.3
+Pillow==12.3.0
+lap==0.5.12
+shapely==2.1.2
+lsq-ellipse==2.2.1
+requests==2.34.2
