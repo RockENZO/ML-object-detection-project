@@ -1,0 +1,252 @@
+{
+  "protocol": "new final holdout from former training groups; prior tested groups quarantined",
+  "split_manifest_sha256": "170d283fb4e2f2d4f6d14ea14f68df629ac5d4ba1310c5ebdca0786cc8e53756",
+  "resolution_selection_sha256": "a0e0d4036d21b99fe9bd58b7452253471e458223ae9d13388b041cc5de130d3d",
+  "results": {
+    "base": {
+      "model": "best.pt",
+      "model_sha256": "42bb5f0a0c16500b1d45052ca56dc524acf34596d9a2b0b2ed71f91b554c98d9",
+      "split_manifest_sha256": "170d283fb4e2f2d4f6d14ea14f68df629ac5d4ba1310c5ebdca0786cc8e53756",
+      "test_images": 135,
+      "test_groups": [
+        "08fd33",
+        "42ba34"
+      ],
+      "ultralytics_version": "8.3.200",
+      "dataset": "base.yaml",
+      "split": "test",
+      "imgsz": 320,
+      "batch": 4,
+      "device": "mps",
+      "per_class": [
+        {
+          "Class": "ball",
+          "Images": 112,
+          "Instances": 112,
+          "Box-P": 0.0,
+          "Box-R": 0.0,
+          "Box-F1": 0.0,
+          "mAP50": 0.0,
+          "mAP50-95": 0.0
+        },
+        {
+          "Class": "goalkeeper",
+          "Images": 75,
+          "Instances": 96,
+          "Box-P": 0.3319,
+          "Box-R": 0.25,
+          "Box-F1": 0.28519,
+          "mAP50": 0.23451,
+          "mAP50-95": 0.07646
+        },
+        {
+          "Class": "player",
+          "Images": 135,
+          "Instances": 2695,
+          "Box-P": 0.71124,
+          "Box-R": 0.62331,
+          "Box-F1": 0.66438,
+          "mAP50": 0.65469,
+          "mAP50-95": 0.30169
+        },
+        {
+          "Class": "referee",
+          "Images": 135,
+          "Instances": 323,
+          "Box-P": 0.45191,
+          "Box-R": 0.14551,
+          "Box-F1": 0.22014,
+          "mAP50": 0.20389,
+          "mAP50-95": 0.09393
+        }
+      ],
+      "speed_ms_per_image": {
+        "preprocess": 0.02734937825826583,
+        "inference": 3.385659889318049,
+        "loss": 5.3415661332783874e-05,
+        "postprocess": 3.307261749998563
+      },
+      "box_precision": 0.37376451025265184,
+      "box_recall": 0.2547059427687457,
+      "box_map50": 0.27327296734081924,
+      "box_map50_95": 0.11802029082382759
+    },
+    "improved": {
+      "model": "best.pt",
+      "model_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+      "split_manifest_sha256": "170d283fb4e2f2d4f6d14ea14f68df629ac5d4ba1310c5ebdca0786cc8e53756",
+      "test_images": 135,
+      "test_groups": [
+        "08fd33",
+        "42ba34"
+      ],
+      "ultralytics_version": "8.3.200",
+      "dataset": "improved.yaml",
+      "split": "test",
+      "imgsz": 1280,
+      "batch": 4,
+      "device": "mps",
+      "per_class": [
+        {
+          "Class": "ball",
+          "Images": 112,
+          "Instances": 112,
+          "Box-P": 0.71976,
+          "Box-R": 0.57143,
+          "Box-F1": 0.63707,
+          "mAP50": 0.57857,
+          "mAP50-95": 0.23815
+        },
+        {
+          "Class": "goalkeeper",
+          "Images": 75,
+          "Instances": 96,
+          "Box-P": 0.98691,
+          "Box-R": 0.78558,
+          "Box-F1": 0.87481,
+          "mAP50": 0.91402,
+          "mAP50-95": 0.66991
+        },
+        {
+          "Class": "player",
+          "Images": 135,
+          "Instances": 2695,
+          "Box-P": 0.95106,
+          "Box-R": 0.95028,
+          "Box-F1": 0.95067,
+          "mAP50": 0.98143,
+          "mAP50-95": 0.82308
+        },
+        {
+          "Class": "referee",
+          "Images": 135,
+          "Instances": 323,
+          "Box-P": 0.66899,
+          "Box-R": 0.82593,
+          "Box-F1": 0.73922,
+          "mAP50": 0.7916,
+          "mAP50-95": 0.59313
+        }
+      ],
+      "speed_ms_per_image": {
+        "preprocess": 0.030318818365534145,
+        "inference": 2.6276219092930355,
+        "loss": 5.061393258748231e-05,
+        "postprocess": 16.14487591734225
+      },
+      "box_precision": 0.8316787869344688,
+      "box_recall": 0.7833031054101283,
+      "box_map50": 0.8164049471850742,
+      "box_map50_95": 0.5810697304029366
+    }
+  },
+  "selected_by_group": {
+    "08fd33": {
+      "images": 57,
+      "metrics": {
+        "precision": 0.9008832392049193,
+        "recall": 0.726775459409148,
+        "map50": 0.7773656795727157,
+        "map50_95": 0.5841867178344542,
+        "per_class": [
+          {
+            "Class": "ball",
+            "Images": 49,
+            "Instances": 49,
+            "Box-P": 0.68115,
+            "Box-R": 0.69388,
+            "Box-F1": 0.68746,
+            "mAP50": 0.72873,
+            "mAP50-95": 0.35535
+          },
+          {
+            "Class": "goalkeeper",
+            "Images": 12,
+            "Instances": 15,
+            "Box-P": 1.0,
+            "Box-R": 0.30526,
+            "Box-F1": 0.46774,
+            "mAP50": 0.42899,
+            "mAP50-95": 0.36272
+          },
+          {
+            "Class": "player",
+            "Images": 57,
+            "Instances": 1139,
+            "Box-P": 0.97084,
+            "Box-R": 0.99473,
+            "Box-F1": 0.98264,
+            "mAP50": 0.98999,
+            "mAP50-95": 0.87336
+          },
+          {
+            "Class": "referee",
+            "Images": 57,
+            "Instances": 129,
+            "Box-P": 0.95154,
+            "Box-R": 0.91323,
+            "Box-F1": 0.93199,
+            "mAP50": 0.96175,
+            "mAP50-95": 0.74532
+          }
+        ]
+      }
+    },
+    "42ba34": {
+      "images": 78,
+      "metrics": {
+        "precision": 0.7841867850845577,
+        "recall": 0.7694015370349849,
+        "map50": 0.7754751359678246,
+        "map50_95": 0.5382613242148437,
+        "per_class": [
+          {
+            "Class": "ball",
+            "Images": 63,
+            "Instances": 63,
+            "Box-P": 0.6868,
+            "Box-R": 0.47619,
+            "Box-F1": 0.56243,
+            "mAP50": 0.47555,
+            "mAP50-95": 0.16465
+          },
+          {
+            "Class": "goalkeeper",
+            "Images": 63,
+            "Instances": 81,
+            "Box-P": 0.98649,
+            "Box-R": 0.90128,
+            "Box-F1": 0.94196,
+            "mAP50": 0.98665,
+            "mAP50-95": 0.72142
+          },
+          {
+            "Class": "player",
+            "Images": 78,
+            "Instances": 1556,
+            "Box-P": 0.92817,
+            "Box-R": 0.92178,
+            "Box-F1": 0.92496,
+            "mAP50": 0.97188,
+            "mAP50-95": 0.77929
+          },
+          {
+            "Class": "referee",
+            "Images": 78,
+            "Instances": 194,
+            "Box-P": 0.53529,
+            "Box-R": 0.77835,
+            "Box-F1": 0.63433,
+            "mAP50": 0.66782,
+            "mAP50-95": 0.48768
+          }
+        ]
+      }
+    }
+  },
+  "limitations": [
+    "Filename-prefix video identities remain provisional; distinct IDs may share scenes.",
+    "Only two provisional video-prefix groups in final test; these are not proven independent matches.",
+    "Baseline and improved models were both newly trained on this study split; earlier models trained on final groups are excluded."
+  ]
+}

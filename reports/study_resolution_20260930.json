@@ -1,0 +1,212 @@
+{
+  "criterion": "maximum validation mAP50-95 over fixed [640,960,1280] resolutions; no test selection",
+  "candidates": [
+    {
+      "imgsz": 640,
+      "validation": {
+        "precision": 0.8801232076590628,
+        "recall": 0.6944805549117747,
+        "map50": 0.7781955567104093,
+        "map50_95": 0.5216693072868344,
+        "per_class": [
+          {
+            "Class": "ball",
+            "Images": 109,
+            "Instances": 112,
+            "Box-P": 0.96418,
+            "Box-R": 0.16964,
+            "Box-F1": 0.28852,
+            "mAP50": 0.36096,
+            "mAP50-95": 0.10304
+          },
+          {
+            "Class": "goalkeeper",
+            "Images": 92,
+            "Instances": 95,
+            "Box-P": 0.83491,
+            "Box-R": 0.86316,
+            "Box-F1": 0.8488,
+            "mAP50": 0.92469,
+            "mAP50-95": 0.67729
+          },
+          {
+            "Class": "player",
+            "Images": 122,
+            "Instances": 2437,
+            "Box-P": 0.92563,
+            "Box-R": 0.94173,
+            "Box-F1": 0.93361,
+            "mAP50": 0.9748,
+            "mAP50-95": 0.7563
+          },
+          {
+            "Class": "referee",
+            "Images": 122,
+            "Instances": 295,
+            "Box-P": 0.79578,
+            "Box-R": 0.80339,
+            "Box-F1": 0.79957,
+            "mAP50": 0.85233,
+            "mAP50-95": 0.55005
+          }
+        ]
+      }
+    },
+    {
+      "imgsz": 960,
+      "validation": {
+        "precision": 0.8381070024008537,
+        "recall": 0.7947703159840317,
+        "map50": 0.8365103019531772,
+        "map50_95": 0.6128017364019991,
+        "per_class": [
+          {
+            "Class": "ball",
+            "Images": 109,
+            "Instances": 112,
+            "Box-P": 0.80365,
+            "Box-R": 0.40199,
+            "Box-F1": 0.53591,
+            "mAP50": 0.51284,
+            "mAP50-95": 0.24529
+          },
+          {
+            "Class": "goalkeeper",
+            "Images": 92,
+            "Instances": 95,
+            "Box-P": 0.82535,
+            "Box-R": 0.90526,
+            "Box-F1": 0.86346,
+            "mAP50": 0.94982,
+            "mAP50-95": 0.73875
+          },
+          {
+            "Class": "player",
+            "Images": 122,
+            "Instances": 2437,
+            "Box-P": 0.94241,
+            "Box-R": 0.9803,
+            "Box-F1": 0.96098,
+            "mAP50": 0.98804,
+            "mAP50-95": 0.82699
+          },
+          {
+            "Class": "referee",
+            "Images": 122,
+            "Instances": 295,
+            "Box-P": 0.78102,
+            "Box-R": 0.89153,
+            "Box-F1": 0.83262,
+            "mAP50": 0.89535,
+            "mAP50-95": 0.64018
+          }
+        ]
+      }
+    },
+    {
+      "imgsz": 1280,
+      "validation": {
+        "precision": 0.8748776704730944,
+        "recall": 0.8127054834555822,
+        "map50": 0.8525344468783268,
+        "map50_95": 0.631562070860214,
+        "per_class": [
+          {
+            "Class": "ball",
+            "Images": 109,
+            "Instances": 112,
+            "Box-P": 0.88497,
+            "Box-R": 0.625,
+            "Box-F1": 0.73261,
+            "mAP50": 0.66792,
+            "mAP50-95": 0.31542
+          },
+          {
+            "Class": "goalkeeper",
+            "Images": 92,
+            "Instances": 95,
+            "Box-P": 0.86354,
+            "Box-R": 0.79938,
+            "Box-F1": 0.83022,
+            "mAP50": 0.89508,
+            "mAP50-95": 0.74242
+          },
+          {
+            "Class": "player",
+            "Images": 122,
+            "Instances": 2437,
+            "Box-P": 0.95041,
+            "Box-R": 0.96881,
+            "Box-F1": 0.95952,
+            "mAP50": 0.9876,
+            "mAP50-95": 0.84004
+          },
+          {
+            "Class": "referee",
+            "Images": 122,
+            "Instances": 295,
+            "Box-P": 0.80058,
+            "Box-R": 0.85763,
+            "Box-F1": 0.82812,
+            "mAP50": 0.85953,
+            "mAP50-95": 0.62837
+          }
+        ]
+      }
+    }
+  ],
+  "chosen": {
+    "imgsz": 1280,
+    "validation": {
+      "precision": 0.8748776704730944,
+      "recall": 0.8127054834555822,
+      "map50": 0.8525344468783268,
+      "map50_95": 0.631562070860214,
+      "per_class": [
+        {
+          "Class": "ball",
+          "Images": 109,
+          "Instances": 112,
+          "Box-P": 0.88497,
+          "Box-R": 0.625,
+          "Box-F1": 0.73261,
+          "mAP50": 0.66792,
+          "mAP50-95": 0.31542
+        },
+        {
+          "Class": "goalkeeper",
+          "Images": 92,
+          "Instances": 95,
+          "Box-P": 0.86354,
+          "Box-R": 0.79938,
+          "Box-F1": 0.83022,
+          "mAP50": 0.89508,
+          "mAP50-95": 0.74242
+        },
+        {
+          "Class": "player",
+          "Images": 122,
+          "Instances": 2437,
+          "Box-P": 0.95041,
+          "Box-R": 0.96881,
+          "Box-F1": 0.95952,
+          "mAP50": 0.9876,
+          "mAP50-95": 0.84004
+        },
+        {
+          "Class": "referee",
+          "Images": 122,
+          "Instances": 295,
+          "Box-P": 0.80058,
+          "Box-R": 0.85763,
+          "Box-F1": 0.82812,
+          "mAP50": 0.85953,
+          "mAP50-95": 0.62837
+        }
+      ]
+    }
+  },
+  "checkpoint_sha256": "6ff1a8dc47e58ceae040a37aea4a44a2a6ce46c583fb158ed3eca5d238b0054a",
+  "split_manifest_sha256": "170d283fb4e2f2d4f6d14ea14f68df629ac5d4ba1310c5ebdca0786cc8e53756",
+  "final_test_evaluated": false
+}

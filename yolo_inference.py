@@ -2,6 +2,8 @@
 
 import argparse
 import json
+import hashlib
+import importlib.metadata
 from pathlib import Path
 
 
@@ -20,10 +22,15 @@ def build_parser() -> argparse.ArgumentParser:
     predict.add_argument("--input", type=Path, default=ROOT / "input_videos" / "08fd33_4.mp4")
     predict.add_argument("--output-dir", type=Path, default=ROOT / "runs" / "codex-predict")
 
+    predict.add_argument("--imgsz", type=int, default=640)
+    predict.add_argument("--device", default="cpu")
+
     evaluate = subcommands.add_parser("evaluate", help="Evaluate on the held-out test split")
     evaluate.add_argument("--data", type=Path, default=DEFAULT_DATA)
     evaluate.add_argument("--output-dir", type=Path, default=ROOT / "runs" / "codex-evaluate")
     evaluate.add_argument("--imgsz", type=int, default=640)
+    evaluate.add_argument("--batch", type=int, default=4)
+    evaluate.add_argument("--device", default="cpu")
     return parser
 
 
@@ -42,27 +49,60 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "predict":
         if not args.input.is_file():
             raise SystemExit(f"Input file not found: {args.input}")
-        model.predict(source=str(args.input), save=True, **run_options)
+        model.predict(source=str(args.input), save=True, imgsz=args.imgsz, device=args.device, **run_options)
         print(f"Annotated predictions saved under {args.output_dir}")
         return 0
 
     if not args.data.is_file():
         raise SystemExit(f"Dataset YAML not found: {args.data}")
+    import yaml
+    from prepare_grouped_split import NAMES, digest
+    dataset = yaml.safe_load(args.data.read_text())
+    names = dataset.get('names', [])
+    if isinstance(names, dict):
+        names = [names[key] for key in sorted(names)]
+    model_names = model.names
+    if isinstance(model_names, dict):
+        model_names = [model_names[key] for key in sorted(model_names)]
+    if list(names) != NAMES or list(model_names) != NAMES:
+        raise SystemExit('Evaluation requires a checkpoint trained for ball/goalkeeper/player/referee in that order; bundled COCO weights are incompatible')
+    manifest = args.data.parent / 'manifest.json'
+    if not manifest.is_file():
+        raise SystemExit('Evaluation requires grouped split manifest; run prepare_grouped_split.py first')
+    split = json.loads(manifest.read_text())
+    root = Path(dataset['path'])
+    test_records = [record for record in split['records'] if record['split'] == 'test']
+    if not test_records:
+        raise SystemExit('Test split is empty')
+    for record in test_records:
+        for kind, key, hash_key in [('images', 'image', 'image_sha256'), ('labels', 'label', 'label_sha256')]:
+            artifact = root / 'test' / kind / Path(record[key]).name
+            if not artifact.is_file() or digest(artifact) != record[hash_key]:
+                raise SystemExit('Test artifact differs from split manifest: ' + str(artifact))
     metrics = model.val(data=str(args.data), split="test", imgsz=args.imgsz,
-                        plots=True, **run_options)
+                        plots=True, batch=args.batch, device=args.device, **run_options)
     summary = {
-        "model": str(args.model.resolve()),
-        "dataset": str(args.data.resolve()),
+        "model": args.model.name,
+        "model_sha256": digest(args.model),
+        "split_manifest_sha256": digest(manifest),
+        "test_images": len(test_records),
+        "test_groups": sorted({record['group'] for record in test_records}),
+        "ultralytics_version": importlib.metadata.version('ultralytics'),
+        "dataset": args.data.name,
         "split": "test",
         "imgsz": args.imgsz,
+        "batch": args.batch,
+        "device": args.device,
+        "per_class": metrics.summary(),
+        "speed_ms_per_image": getattr(metrics, "speed", {}),
         "box_precision": float(metrics.box.mp),
         "box_recall": float(metrics.box.mr),
         "box_map50": float(metrics.box.map50),
         "box_map50_95": float(metrics.box.map),
     }
     report = args.output_dir / "metrics.json"
-    report.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(summary, indent=2))
+    report.write_text(json.dumps(summary, indent=2, default=lambda value: value.item()) + "\n", encoding="utf-8")
+    print(json.dumps(summary, indent=2, default=lambda value: value.item()))
     print(f"Metrics saved to {report}")
     return 0
 

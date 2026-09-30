@@ -1,0 +1,97 @@
+{
+  "class_annotation_counts": {
+    "test": {
+      "0": 61,
+      "1": 51,
+      "2": 1276,
+      "3": 124
+    },
+    "train": {
+      "0": 392,
+      "1": 327,
+      "2": 9528,
+      "3": 1100
+    },
+    "val": {
+      "0": 112,
+      "1": 95,
+      "2": 2437,
+      "3": 295
+    }
+  },
+  "group_overlap_in_original_splits": {
+    "train_test": [
+      "40cd38",
+      "42ba34",
+      "4b770a",
+      "573e61",
+      "744b27",
+      "798b45",
+      "a9f16c"
+    ],
+    "train_valid": [
+      "08fd33",
+      "121364",
+      "2e57b9",
+      "40cd38",
+      "42ba34",
+      "4b770a",
+      "538438",
+      "54745b",
+      "573e61",
+      "744b27",
+      "798b45",
+      "a9f16c"
+    ],
+    "valid_test": [
+      "40cd38",
+      "42ba34",
+      "4b770a",
+      "573e61",
+      "744b27",
+      "798b45",
+      "a9f16c"
+    ]
+  },
+  "group_rule": "filename hex prefix before frame indices; provisional video identity",
+  "groups": {
+    "08fd33": "train",
+    "121364": "train",
+    "2e57b9": "train",
+    "40cd38": "train",
+    "42ba34": "train",
+    "4b770a": "train",
+    "538438": "val",
+    "54745b": "test",
+    "55c9d1": "test",
+    "573e61": "train",
+    "744b27": "train",
+    "798b45": "train",
+    "a9f16c": "val",
+    "c01561": "test",
+    "cd987c": "val"
+  },
+  "images": 663,
+  "limitations": [
+    "Video identities are inferred from export filenames and need upstream confirmation.",
+    "Different video IDs may still depict the same match/scene; near duplicates are not audited."
+  ],
+  "manifest_sha256": "877ff10bc3d807d6ded61064d2bcadcedc877218fb122e75fcb366d67c5b1fca",
+  "names": [
+    "ball",
+    "goalkeeper",
+    "player",
+    "referee"
+  ],
+  "new_split_counts": {
+    "test": 64,
+    "train": 477,
+    "val": 122
+  },
+  "original_split_counts": {
+    "test": 13,
+    "train": 612,
+    "valid": 38
+  },
+  "seed": 42
+}

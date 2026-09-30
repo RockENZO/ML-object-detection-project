@@ -1,0 +1,61 @@
+{
+  "model": "best.pt",
+  "model_sha256": "63fd2dde2ad4d3a30a1e54a263227dd05459ed229da16e5fc0a178769837d409",
+  "split_manifest_sha256": "877ff10bc3d807d6ded61064d2bcadcedc877218fb122e75fcb366d67c5b1fca",
+  "test_images": 64,
+  "test_groups": [
+    "54745b",
+    "55c9d1",
+    "c01561"
+  ],
+  "ultralytics_version": "8.3.200",
+  "dataset": "grouped/data.yaml",
+  "split": "test",
+  "imgsz": 320,
+  "per_class": [
+    {
+      "Class": "ball",
+      "Images": 61,
+      "Instances": 61,
+      "Box-P": 0.0,
+      "Box-R": 0.0,
+      "Box-F1": 0.0,
+      "mAP50": 0.0,
+      "mAP50-95": 0.0
+    },
+    {
+      "Class": "goalkeeper",
+      "Images": 51,
+      "Instances": 51,
+      "Box-P": 0.53442,
+      "Box-R": 0.31373,
+      "Box-F1": 0.39536,
+      "mAP50": 0.31183,
+      "mAP50-95": 0.145
+    },
+    {
+      "Class": "player",
+      "Images": 64,
+      "Instances": 1276,
+      "Box-P": 0.73099,
+      "Box-R": 0.7163,
+      "Box-F1": 0.72357,
+      "mAP50": 0.76208,
+      "mAP50-95": 0.37722
+    },
+    {
+      "Class": "referee",
+      "Images": 64,
+      "Instances": 124,
+      "Box-P": 0.1445,
+      "Box-R": 0.16129,
+      "Box-F1": 0.15244,
+      "mAP50": 0.12119,
+      "mAP50-95": 0.05632
+    }
+  ],
+  "box_precision": 0.35247819128926194,
+  "box_recall": 0.29782918830389876,
+  "box_map50": 0.29877518938766406,
+  "box_map50_95": 0.14463557503450433
+}
