@@ -4,7 +4,17 @@ An experimental offline pipeline now adds shot-local BoT-SORT tracking, pinned P
 
 See [setup, commands, artifact schema and evaluation protocol](docs/MATCH_ANALYSIS.md), [cloud notebook](notebooks/football_analysis_colab.ipynb) and [measured development results](docs/match_analysis_results.json) / [broadcast coaching iteration](docs/coaching_iteration_results.json). Accuracy targets are release gates; unmeasured or unmet gates remain experimental. No complete official match-statistics or named-player claims are made.
 
-# Football player detection
+## Current evidence and model availability
+
+| Capability | Published evidence | Limit |
+| --- | --- | --- |
+| Four-class detection | mAP50 **0.27327 → 0.81640**, mAP50–95 **0.11802 → 0.58107** | Fixed 135-frame / two clip-prefix-group test; not an independent full-match benchmark |
+| Broadcast analysis | Saved tracking, mapping, ball and coverage results | Separate broadcast development/evaluation footage; detector scores above do not establish match-analysis quality |
+| Possession transitions | Automatic observed-team control changes with abstention | Low ball/control coverage limits supported events; no complete official statistics claim |
+
+See [detector results](reports/study_test_20260930.json) and [broadcast results and release gates](docs/MATCH_ANALYSIS.md). Reproduce or supply a four-class trained checkpoint before using the match-analysis pipeline. The bundled `models/yolov8s.pt` is an 80-class COCO initialization checkpoint, not the fine-tuned football model; evaluation rejects it. Generated detector/ball checkpoints and PnLCalib dependencies have separate setup steps documented in the analysis guide.
+
+## Detector setup and experiments
 
 This repository contains a four-class Roboflow football dataset (ball, goalkeeper, player, referee), sample video, pretrained YOLO weights, and scripts for annotated inference and evaluation.
 
@@ -46,7 +56,7 @@ python yolo_inference.py --model runs/grouped-baseline/train/weights/best.pt eva
 
 The command writes `runs/codex-evaluate/metrics.json` with box precision, recall, mAP@0.5, and mAP@0.5:0.95. Record the checkpoint, dataset version, image size, Ultralytics version, and exact command with any performance claim. The test split must remain untouched during model selection. Do not compare a YOLOv5 training result with inference from different YOLOv8 weights as though they were one model.
 
-The profile's **97.5% precision** and **85% less manual review** figures cannot currently be reproduced from the checked-in code: there is no saved test report, evaluation command, or manual-review study. Treat them as unverified until their underlying results are published.
+Historical **97.5% precision** and **85% less manual review** figures are not supported by the published experiments. The detector reports below use scoped, grouped test partitions; no manual-review time-saving study is published. Current profile descriptions use those scoped results and mark broadcast analysis experimental.
 
 ## Project layout
 
@@ -135,3 +145,4 @@ python yolo_inference.py --model runs/performance-study/improved/weights/best.pt
 **Resume wording:** “Fine-tuned a four-class YOLOv8s football detector using small-ball crop augmentation and validation-based resolution selection; improved mAP50 from 0.273 to 0.816 and mAP50–95 from 0.118 to 0.581 on a fixed 135-frame, clip-prefix-grouped benchmark.”
 
 This does not substantiate the historical 97.5% precision or manual-review savings claims. The historical baseline above uses a different test partition and is not the comparator for this improvement.
+
