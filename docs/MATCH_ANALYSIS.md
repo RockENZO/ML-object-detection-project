@@ -220,3 +220,14 @@ python -m streamlit run dashboard/app.py -- --run artifacts/coaching-control-v3
 Without `--refresh-airborne`, recorded airborne flags are preserved. Source observations are immutable; existing outputs are never overwritten. Source artifact hashes, source detector/calibration signatures and current control-code hashes are recorded separately. Reprocessing throughput is **not** GPU inference throughput. Previously examined evaluation footage is labelled regression footage for this iteration, not a fresh untouched benchmark.
 
 Automated results are estimates, not self-generated ground truth. Independent labels are used only to measure accuracy; they are not an input to this automatic runtime. No change-count/coverage improvement alone establishes correctness. See [automatic_control_results.json](automatic_control_results.json) for real-video results and uncertainty reasons.
+
+### Threshold-aware spatial matching
+
+Per-frame box matching first maximizes the number of one-to-one matches satisfying
+IoU >=0.5 and the requested role compatibility, then maximizes IoU among those
+assignments. Maximizing raw IoU before filtering can otherwise discard a valid
+match in overlapping-player scenes. This affects matched role/team/pitch coverage
+and ball image matching; global identity aggregation remains separately defined
+above. Historical reports are preserved with their original evaluation-code hash
+and have not been recomputed under this correction. A changed evaluator is not
+evidence of a detector or tracking improvement.

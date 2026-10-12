@@ -90,8 +90,14 @@ def match_boxes(truth, predicted, role_sensitive=True):
             for a in truth
         ]
     )
-    rows, cols = linear_sum_assignment(-scores)
-    return [(int(a), int(b)) for a, b in zip(rows, cols) if scores[a, b] >= 0.5]
+    valid = scores >= 0.5
+    # Prefer the largest number of threshold-valid matches. The bonus exceeds
+    # any possible aggregate IoU tie-break, so one high-IoU edge cannot displace
+    # two valid edges and create an artificial miss after threshold filtering.
+    bonus = min(len(truth), len(predicted)) + 1
+    weights = np.where(valid, bonus + scores, 0.0)
+    rows, cols = linear_sum_assignment(-weights)
+    return [(int(a), int(b)) for a, b in zip(rows, cols) if valid[a, b]]
 
 
 def transition_metrics(truth, predicted, tolerance=1.0):

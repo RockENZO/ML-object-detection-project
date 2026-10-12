@@ -16,6 +16,28 @@ def people(team="A", xy=(1, 1), observation="observed"):
     return [{"team": team, "xy": xy, "observation": observation}]
 
 
+class MatchingTests(unittest.TestCase):
+    def test_maximize_valid_matches_before_total_iou(self):
+        from match_analysis.evaluation import match_boxes
+        truth=[{'bbox':[5,0,17,10],'role':'player'},
+               {'bbox':[4,0,15,10],'role':'player'}]
+        predicted=[{'bbox':[1,0,15,10],'role':'player'},
+                   {'bbox':[3,0,10,10],'role':'player'}]
+        # IoU matrix: [[.625,.357],[.786,.5]]. Maximizing raw IoU
+        # chooses the off-diagonal and drops the .357 match afterward,
+        # even though two valid diagonal matches exist at the .5 cutoff.
+        self.assertEqual(match_boxes(truth,predicted),[(0,0),(1,1)])
+        predicted.append({'bbox':[100,0,110,10],'role':'player'})
+        self.assertEqual(match_boxes(truth,predicted),[(0,0),(1,1)])
+
+    def test_invalid_edges_never_become_matches(self):
+        from match_analysis.evaluation import match_boxes
+        a=[{'bbox':[0,0,10,10],'role':'player'}]
+        b=[{'bbox':[6,0,16,10],'role':'player'}]
+        self.assertEqual(match_boxes(a,b),[])
+        self.assertEqual(match_boxes(a,[]),[])
+
+
 class StateTests(unittest.TestCase):
     def test_prediction_expires_and_reset_stops_it(self):
         motion = Motion()
