@@ -159,6 +159,23 @@ class StateTests(unittest.TestCase):
         self.assertEqual(result["precision"], 0.5)
         self.assertEqual(transition_metrics([a], [])["recall"], 0)
 
+    def test_trailing_window_clips_partial_observation_intervals(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);(root/'shots').mkdir()
+            records=[{'timestamp':i/10,'shot':0,'eligible':True,
+                      'possession':'A' if i<2 else 'B','ball':{'xy':[75,34]},'people':[]}
+                     for i in range(4)]
+            (root/'shots/000000.jsonl').write_text(''.join(json.dumps(r)+'\n' for r in records))
+            config=Config();config.pressure_window=0.25
+            metadata={"attacking_directions":[{"start":0,"end":1,"A":1,"B":-1}]}
+            summarize(root,config,metadata,0.4)
+            last=json.loads((root/'trends.json').read_text())[-1]
+            self.assertAlmostEqual(last['covered_seconds'],0.25)
+            self.assertAlmostEqual(last['A_possession_share'],0.2)
+            self.assertAlmostEqual(last['A_territorial_pressure'],0.2)
+            self.assertAlmostEqual(last['window_start_timestamp'],0.15)
+            self.assertAlmostEqual(last['window_end_timestamp'],0.4)
+
     def test_summary_predictions_excluded_and_unknown_explicit(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
