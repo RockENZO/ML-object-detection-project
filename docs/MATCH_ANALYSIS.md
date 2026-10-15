@@ -39,7 +39,7 @@ Scene cuts use HSV-histogram change; grass fraction/person counts nominate wide 
 - Observed control needs 0.5 seconds of persistence. A change requires continuous observed evidence from Team A to B or B to A in an uninterrupted eligible shot. Missing segments reset the chain. The event timestamp is the first supported competing-team observation, with the interval since the last supported prior-team observation and a later confirmation time.
 - Possession percentage denominator is **covered eligible control time**. Eligible unknown duration and excluded duration are reported separately. A high conditional possession percentage with little coverage cannot represent the match.
 - Ball-zone occupancy uses observed possession in left/middle/right thirds. Player-zone observation seconds and heatmaps count observed, assigned, eligible positions only; offscreen players are absent.
-- Territorial pressure is each team's share of rolling 30-second covered possession in its opponent's half. It requires known direction throughout the covered window. Unknown/excluded time remains visible.
+- Territorial pressure is each team's share of rolling 30-second covered possession in its opponent's half. It requires known direction throughout the covered window. Unknown/excluded time remains visible. Trend rows include `window_start_timestamp` and `window_end_timestamp`; the window ends at the sample interval's end and clips partial intervals at its boundaries.
 
 ## Artifact contract
 

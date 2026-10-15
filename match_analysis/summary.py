@@ -102,29 +102,39 @@ def summarize(output, config, metadata, video_end):
             entry["direction_known"] = direction is not None
             zones[team][min(2, int(x / config.pitch_length * 3))] += dt
         window.append(entry)
-        while window and window[0]["t"] < t - config.pressure_window:
+        # Statistics describe the sampled interval, ending at t + dt. Clip
+        # each contribution to this exact trailing window, including its edges.
+        window_end = t + dt
+        window_start = window_end - config.pressure_window
+        while window and window[0]["t"] + window[0]["dt"] <= window_start:
             window.popleft()
-        total = sum(r["dt"] for r in window if r["team"])
-        known = sum(r["dt"] for r in window if r.get("direction_known"))
+        recent = [
+            {**r, "dt": max(0, min(r["t"] + r["dt"], window_end) - max(r["t"], window_start))}
+            for r in window
+        ]
+        total = sum(r["dt"] for r in recent if r["team"])
+        known = sum(r["dt"] for r in recent if r.get("direction_known"))
         trends.append(
             {
                 "timestamp": t,
+                "window_end_timestamp": window_end,
+                "window_start_timestamp": max(0, window_start),
                 "eligible": frame["eligible"],
                 "possession": team,
                 "covered_seconds": total,
-                "unknown_seconds": sum(r["dt"] for r in window if not r["team"]),
-                "A_possession_share": sum(r["dt"] for r in window if r["team"] == "A")
+                "unknown_seconds": sum(r["dt"] for r in recent if not r["team"]),
+                "A_possession_share": sum(r["dt"] for r in recent if r["team"] == "A")
                 / total
                 if total
                 else None,
                 "A_territorial_pressure": sum(
-                    r["dt"] for r in window if r["team"] == "A" and r["pressure"]
+                    r["dt"] for r in recent if r["team"] == "A" and r["pressure"]
                 )
                 / total
                 if total and known >= total - 1e-8
                 else None,
                 "B_territorial_pressure": sum(
-                    r["dt"] for r in window if r["team"] == "B" and r["pressure"]
+                    r["dt"] for r in recent if r["team"] == "B" and r["pressure"]
                 )
                 / total
                 if total and known >= total - 1e-8
