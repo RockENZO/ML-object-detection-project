@@ -1,4 +1,4 @@
-"""Portable commands: python -m match_analysis analyze/evaluate/freeze."""
+"""Portable commands: python -m match_analysis analyze/evaluate/freeze/export-viewer."""
 
 import argparse
 import json
@@ -42,6 +42,19 @@ def main(argv=None):
         action="store_true",
         help="Recompute upper-body-overlap uncertainty from recorded pixel boxes",
     )
+    viewer = subs.add_parser(
+        "export-viewer",
+        help="Export a finished run as a static web viewer (analysis.json + clip.mp4); CPU only",
+    )
+    viewer.add_argument("--run", required=True, type=Path)
+    viewer.add_argument("--output", required=True, type=Path)
+    viewer.add_argument("--video", type=Path, help="Defaults to the run's recorded video")
+    viewer.add_argument(
+        "--no-transcode",
+        action="store_true",
+        help="Copy the video unchanged (it must already be browser-playable H.264)",
+    )
+    viewer.add_argument("--max-height", type=int, default=720)
     args = parser.parse_args(argv)
     try:
         if args.command == "analyze":
@@ -70,6 +83,16 @@ def main(argv=None):
             from .control import recompute
 
             result = recompute(args.run, args.output, args.refresh_airborne)
+        elif args.command == "export-viewer":
+            from .viewer import export_viewer
+
+            result = export_viewer(
+                args.run,
+                args.output,
+                args.video,
+                not args.no_transcode,
+                args.max_height,
+            )
         elif args.command == "freeze":
             from .evaluation import freeze
 

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Match Momentum Analyzer</title>
+<meta name="description" content="Post-match momentum, critical moments and tactic notes from a broadcast football clip, replayed from precomputed vision output.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo" aria-hidden="true"></span>
+    <div>
+      <h1>Match Momentum Analyzer</h1>
+      <p>Vision-derived momentum, critical moments and tactic notes <span class="badge warn" title="Estimated from detections; not official statistics">experimental</span></p>
+    </div>
+  </div>
+  <div class="teams" id="teams" aria-label="Teams"></div>
+</header>
+
+<main id="app" hidden>
+  <section class="stage">
+    <div class="card video-card">
+      <div class="video-wrap" id="videoWrap">
+        <video id="video" playsinline muted preload="auto"></video>
+        <canvas id="overlay" aria-hidden="true"></canvas>
+        <div class="video-state" id="videoState"></div>
+      </div>
+      <div class="controls">
+        <button id="play" class="icon" aria-label="Play or pause (space)">&#9654;</button>
+        <input id="scrub" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek">
+        <span class="time" id="time">0:00 / 0:00</span>
+        <select id="rate" aria-label="Playback speed">
+          <option value="0.5">0.5&times;</option>
+          <option value="1" selected>1&times;</option>
+          <option value="2">2&times;</option>
+        </select>
+      </div>
+      <div class="toggles">
+        <label><input type="checkbox" id="tBoxes" checked> Detections</label>
+        <label><input type="checkbox" id="tTrails" checked> Trails</label>
+        <label><input type="checkbox" id="tFootprint" checked> Camera footprint</label>
+        <label>Heat <select id="tHeat"><option value="">off</option><option value="A">Team A</option><option value="B">Team B</option></select></label>
+      </div>
+    </div>
+
+    <div class="card pitch-card">
+      <div class="pitch-head">
+        <div class="chips" id="status"></div>
+      </div>
+      <canvas id="pitch" aria-label="Top-down pitch view of tracked players and ball"></canvas>
+      <div class="pitch-foot" id="pitchFoot"></div>
+    </div>
+  </section>
+
+  <section class="card momentum-card">
+    <div class="card-head">
+      <h2>Momentum timeline</h2>
+      <div class="legend" id="legend"></div>
+      <div class="now" id="now"></div>
+    </div>
+    <canvas id="momentum" aria-label="Momentum timeline"></canvas>
+    <div class="tooltip" id="tooltip" hidden></div>
+  </section>
+
+  <section class="lower">
+    <div class="card">
+      <div class="card-head"><h2>Critical moments</h2><span class="sub" id="momentCount"></span></div>
+      <ol class="moments" id="moments"></ol>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Tactic notes</h2><span class="sub">live at the playhead</span></div>
+      <div id="shape" class="shape"></div>
+      <div id="notes" class="notes"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>How much is observed</h2></div>
+      <div id="coverage" class="coverage"></div>
+      <ul class="limits" id="limits"></ul>
+    </div>
+  </section>
+</main>
+
+<div id="error" class="error" hidden></div>
+<footer>Analysis replayed from <code>data/analysis.json</code>. Detection, tracking and pitch mapping run offline in Python; this page does not run the model.</footer>
+<script src="app.js"></script>
+</body>
+</html>

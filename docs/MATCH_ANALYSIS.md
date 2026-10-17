@@ -22,6 +22,8 @@ Supply the previously trained four-class checkpoint; generic COCO weights are re
 
 The dashboard is designed for a **local browser and local Streamlit server**. It streams the registered MP4 through a loopback HTTP server with byte-range support. Select the local MP4 if cloud paths differ. Its video element is the sole playback clock: video seeking drives pitch positions, trajectories, coverage and the trend cursor. Event buttons seek to the supporting uncertainty interval. Animation payloads cover a 60-second window plus 10 seconds of trail history. Source MP4 must use a browser-supported codec; H.264 is recommended.
 
+A finished run can also be exported as a static web viewer with a momentum timeline, critical moments and tactic notes; see [VIEWER.md](VIEWER.md).
+
 ## Inputs, coordinates and evidence
 
 Original decoded presentation timestamps are retained, sampled at 10 Hz (a 25 Hz source alternates 80/120 ms sample gaps). Raw video is never loaded in full. Hashes cover video, checkpoint, configuration, metadata, analysis source files and the pitch-asset manifest. Camera-shot files are atomically committed before checkpoints. An interruption reprocesses the active shot. Completed shots and match-level colour centres survive recovery. Resume rejects changed inputs/settings/code; keep the recorded runtime environment for repeatability.
