@@ -399,6 +399,20 @@ class PlatformTests(unittest.TestCase):
         self.assertEqual(device_string("0"), "cuda:0")
         self.assertEqual(device_string("mps"), "mps")
 
+    def test_concurrent_freeze_cannot_replace_existing_partition(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            sources, output = root / 'sources.json', root / 'frozen.json'
+            sources.write_text(json.dumps([{'match_id': 'one', 'clip_id': 'clip'}]))
+            serialize = json.dumps
+            def concurrent_writer(*args, **kwargs):
+                output.write_text('first completed partition')
+                return serialize(*args, **kwargs)
+            with patch('match_analysis.evaluation.json.dumps', side_effect=concurrent_writer), self.assertRaises(ValueError):
+                freeze(sources, output)
+            self.assertEqual(output.read_text(), 'first completed partition')
+
     def test_freeze_groups_and_rejects_overwrites_and_mutated_annotations(self):
         from match_analysis.evaluation import evaluate
         from match_analysis.hashing import digest
