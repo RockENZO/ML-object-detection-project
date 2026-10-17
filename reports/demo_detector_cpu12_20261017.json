@@ -1,0 +1,77 @@
+{
+  "variant": "improved",
+  "checkpoint_sha256": "960e9527da27edd39068409b3a5c574791edaa1bf3cc59079d9a93b978738ab7",
+  "initial_checkpoint_sha256": "268e5bb54c640c96c3510224833bc2eeacab4135c6deb41502156e39986b562d",
+  "split_manifest_sha256": "170d283fb4e2f2d4f6d14ea14f68df629ac5d4ba1310c5ebdca0786cc8e53756",
+  "augmentation_sha256": "d534c650afcd991fce4c1874f729f09f8759dac83b3d7b6e6741399ab9143c97",
+  "options": {
+    "epochs": 12,
+    "imgsz": 640,
+    "batch": 8,
+    "seed": 42,
+    "deterministic": true,
+    "device": "cpu",
+    "workers": 0,
+    "patience": 20,
+    "name": "improved",
+    "exist_ok": false,
+    "plots": true
+  },
+  "data_role": "improved.yaml",
+  "validation": {
+    "map50": 0.6912174802500828,
+    "map50_95": 0.45562909415620256,
+    "precision": 0.7484078743005164,
+    "recall": 0.6379343793711216,
+    "per_class": [
+      {
+        "Class": "ball",
+        "Images": 109,
+        "Instances": 112,
+        "Box-P": 0.48493,
+        "Box-R": 0.02679,
+        "Box-F1": 0.05077,
+        "mAP50": 0.09874,
+        "mAP50-95": 0.01682
+      },
+      {
+        "Class": "goalkeeper",
+        "Images": 92,
+        "Instances": 95,
+        "Box-P": 0.86152,
+        "Box-R": 0.91685,
+        "Box-F1": 0.88833,
+        "mAP50": 0.93614,
+        "mAP50-95": 0.63842
+      },
+      {
+        "Class": "player",
+        "Images": 122,
+        "Instances": 2437,
+        "Box-P": 0.89379,
+        "Box-R": 0.93352,
+        "Box-F1": 0.91322,
+        "mAP50": 0.96631,
+        "mAP50-95": 0.7131
+      },
+      {
+        "Class": "referee",
+        "Images": 122,
+        "Instances": 295,
+        "Box-P": 0.75339,
+        "Box-R": 0.67458,
+        "Box-F1": 0.71181,
+        "mAP50": 0.76368,
+        "mAP50-95": 0.45418
+      }
+    ]
+  },
+  "runtime": {
+    "python": "3.13.16",
+    "torch": "2.14.1+cu130",
+    "ultralytics": "8.3.200"
+  },
+  "elapsed_seconds": 4044.5416497,
+  "determinism": "MPS includes nondeterministic operators; exact repeats are not guaranteed.",
+  "note": "Demo detector for the web viewer: fresh COCO-initialised four-class YOLOv8s, 12 epochs at 640 px on 4 CPU cores. Validation partition only; no test evaluation was run on this checkpoint. Much shorter than the 80-epoch study, so its scores are lower than the published final-test results."
+}

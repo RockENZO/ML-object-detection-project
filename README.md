@@ -4,6 +4,22 @@ An experimental offline pipeline now adds shot-local BoT-SORT tracking, pinned P
 
 See [setup, commands, artifact schema and evaluation protocol](docs/MATCH_ANALYSIS.md), [cloud notebook](notebooks/football_analysis_colab.ipynb) and [measured development results](docs/match_analysis_results.json) / [broadcast coaching iteration](docs/coaching_iteration_results.json). Accuracy targets are release gates; unmeasured or unmet gates remain experimental. No complete official match-statistics or named-player claims are made.
 
+## Match momentum viewer
+
+![Viewer walkthrough](docs/viewer-demo.gif)
+
+A static web viewer replays the offline analysis for a broadcast clip: a calibrated top-down pitch with tracked players and ball, the video with detections, a **momentum timeline**, ranked **critical moments** with the evidence behind each, and **tactic notes** that update with the playhead. [Open the live demo](https://rockenzo.github.io/ML-object-detection-project/) ([MP4 walkthrough](docs/viewer-demo.mp4)). It runs no model in the browser; detection, tracking and pitch mapping run in Python and are exported by one command.
+
+```bash
+python -m match_analysis analyze --video input_videos/08fd33_4.mp4 \
+  --checkpoint runs/performance-study/improved/weights/best.pt --config configs/match.json \
+  --device 0 --output artifacts/match
+python -m match_analysis export-viewer --run artifacts/match --output web/data   # needs ffmpeg
+python -m http.server -d web 8000
+```
+
+How each number is derived, the data contract and the limits are in [docs/VIEWER.md](docs/VIEWER.md). The committed demo (`web/data`) was produced from the bundled 30 s clip with a **12-epoch CPU-trained checkpoint** (validation mAP50 0.69, see [the report](reports/demo_detector_cpu12_20261017.json)), not the 80-epoch model behind the published results below, and the ball is detected on only part of the clip. Everything in the viewer is an estimate and the existing release gates still apply. Re-running the commands above with a stronger checkpoint regenerates the demo.
+
 ## Current evidence and model availability
 
 | Capability | Published evidence | Limit |
