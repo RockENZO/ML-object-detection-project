@@ -65,7 +65,14 @@ def freeze(sources, output):
         "match_overrides": assigned_partitions,
         "sources": records,
     }
-    output.write_text(json.dumps(result, indent=2) + "\n")
+    serialized = json.dumps(result, indent=2) + "\n"
+    try:
+        # Exclusive creation enforces immutability even if another process
+        # finishes a partition after the initial existence check.
+        with output.open("x", encoding="utf-8") as handle:
+            handle.write(serialized)
+    except FileExistsError as error:
+        raise ValueError("A frozen partition cannot be overwritten") from error
     return result
 
 
