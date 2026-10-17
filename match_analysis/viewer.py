@@ -105,7 +105,7 @@ def frame_payload(run):
     return frames
 
 
-def transcode(video, output, max_height=720):
+def transcode(video, output, max_height=720, duration=None):
     """Browser-friendly copies without audio, keeping original timestamps.
 
     H.264 plays in Safari, Chrome and Edge. Open-source Chromium builds and
@@ -114,7 +114,9 @@ def transcode(video, output, max_height=720):
     if shutil.which("ffmpeg") is None:
         raise RuntimeError("ffmpeg is required to transcode the viewer video")
     scale = f"scale=-2:'min({max_height},ih)'"
-    common = ["ffmpeg", "-y", "-loglevel", "error", "-i", str(video), "-an", "-vf", scale]
+    # Never publish footage beyond what was analysed (partial runs use --max-seconds).
+    limit = ["-t", f"{duration:.3f}"] if duration else []
+    common = ["ffmpeg", "-y", "-loglevel", "error", "-i", str(video), *limit, "-an", "-vf", scale]
     subprocess.run(
         common
         + [
@@ -151,20 +153,33 @@ def export_viewer(run, output, video=None, transcode_video=True, max_height=720)
     source_video = Path(video or manifest["video"])
     if not source_video.is_file():
         raise ValueError("Source video not found: " + str(source_video))
+    # Tracks, timestamps and homographies belong to the analysed file only.
+    if digest(source_video) != signature["video_sha256"]:
+        raise ValueError("Video does not match the one this run analysed (SHA-256 differs)")
     capture = cv2.VideoCapture(str(source_video))
     size = [
         int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
         int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT)),
     ]
+    fps = capture.get(cv2.CAP_PROP_FPS)
+    length = capture.get(cv2.CAP_PROP_FRAME_COUNT) / fps if fps > 0 else 0
     capture.release()
+    partial = length > manifest["video_end"] + 0.25
     if not all(size):
         raise ValueError("Cannot read video dimensions")
     insights = build(run, config, metadata, events, size)
     output.mkdir(parents=True, exist_ok=True)
     video_name = "clip.mp4"
     if transcode_video:
-        videos = transcode(source_video, output, max_height)
+        videos = transcode(
+            source_video, output, max_height, manifest["video_end"] if partial else None
+        )
     else:
+        if partial:
+            raise ValueError(
+                "This run analysed only the first %.1f s; --no-transcode would publish the rest of the video"
+                % manifest["video_end"]
+            )
         shutil.copyfile(source_video, output / video_name)
         videos = [{"src": video_name, "type": "video/mp4"}]
     names = summary.get("team_names", {"A": "Team A", "B": "Team B"})

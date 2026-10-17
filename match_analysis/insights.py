@@ -8,7 +8,7 @@ uses it says so, and nothing here is an official statistic.
 
 import math
 from collections import defaultdict, deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 
@@ -57,6 +57,9 @@ class Settings:
     shift_window: float = 5.0
     min_outfield: int = 6
     min_shape_change: float = 3.0
+    # Derived from the run's sample rate in build(); defaults suit 10 Hz.
+    max_gap: float = 0.3
+    speed_tolerance: float = 0.1
     max_moments: int = 14
 
 
@@ -124,7 +127,7 @@ def names_of(metadata):
 def collect(output, config, metadata, size, settings):
     """One pass over saved frames: per-frame records and per-bin aggregates."""
     frames, bins = [], defaultdict(lambda: defaultdict(list))
-    history = defaultdict(lambda: deque(maxlen=14))
+    history = defaultdict(deque)
     previous_ball = None
     ball_speeds = []
     for frame in load_frames(output):
@@ -210,7 +213,7 @@ def collect(output, config, metadata, size, settings):
             same = (
                 previous_ball is not None
                 and previous_ball[2] == frame["shot"]
-                and 0 < t - previous_ball[0] <= 0.3
+                and 0 < t - previous_ball[0] <= settings.max_gap
             )
             if same:
                 speed = math.dist(ball_xy, previous_ball[1]) / (t - previous_ball[0])
@@ -222,7 +225,13 @@ def collect(output, config, metadata, size, settings):
         for person in players:
             samples = history[person["id"]]
             samples.append((t, person["xy"]))
-            earlier = [s for s in samples if 0.9 <= t - s[0] <= 1.1]
+            while t - samples[0][0] > 1.0 + settings.speed_tolerance + 0.5:
+                samples.popleft()
+            earlier = [
+                s
+                for s in samples
+                if abs(t - s[0] - 1.0) <= settings.speed_tolerance
+            ]
             if earlier:
                 speed = math.dist(person["xy"], earlier[0][1]) / (t - earlier[0][0])
                 if speed <= 12:
@@ -230,17 +239,21 @@ def collect(output, config, metadata, size, settings):
     return frames, bins, ball_speeds
 
 
-def bin_series(bins, settings, directions_known):
+def bin_series(bins, settings, metadata):
     keys = sorted(bins)
     first, last = keys[0], keys[-1]
-    possible = sum(w for k, w in settings.weights.items() if k != "territory")
-    if directions_known:
-        possible += settings.weights["territory"]
+    base = sum(w for k, w in settings.weights.items() if k != "territory")
     rows = []
     for key in range(first, last + 1):
         bin_ = bins.get(key)
         row = {"t": key * settings.bin_seconds, "raw": None, "support": 0.0}
         rows.append(row)
+        # Territory can only exist where attacking direction is known.
+        possible = base + (
+            settings.weights["territory"]
+            if direction_at(metadata, row["t"] + settings.bin_seconds / 2, "A") is not None
+            else 0.0
+        )
         if not bin_:
             continue
         n, eligible = len(bin_["n"]), len(bin_["eligible"])
@@ -306,9 +319,15 @@ def runs(series, predicate):
             start = None
 
 
-def confidence_word(support, anchor_kind="ball"):
-    score = support * (1.0 if anchor_kind == "ball" else 0.7)
-    return "medium" if score >= 0.45 else "low"
+def ball_share(rows, first, last):
+    """Share of bins in [first, last] whose location of play was the observed ball."""
+    kinds = [rows[i].get("anchor_kind") for i in range(first, last + 1)]
+    return kinds.count("ball") / len(kinds)
+
+
+def confidence_word(support, share=1.0):
+    """Medium needs decent support and mostly observed-ball evidence."""
+    return "medium" if support >= 0.45 and share >= 0.5 else "low"
 
 
 def momentum_moments(rows, series, settings, names):
@@ -338,10 +357,10 @@ def momentum_moments(rows, series, settings, names):
                 "end": rows[b0]["t"] + settings.bin_seconds,
                 "team": tb,
                 "score": min(1.0, total / 1.2),
-                "confidence": confidence_word(float(support)),
+                "confidence": confidence_word(float(support), ball_share(rows, a0, b1)),
                 "title": f"Momentum swings from {names[ta]} to {names[tb]}",
                 "evidence": [
-                    f"Momentum index peaked at {peak_a:+.2f} for {names[ta]}, then {peak_b:+.2f} for {names[tb]} within {rows[b0]['t'] - rows[a1]['t']:.0f}s",
+                    f"Momentum index reached {peak_a:.2f} in favour of {names[ta]}, then {peak_b:.2f} in favour of {names[tb]}, within {rows[b0]['t'] - rows[a1]['t']:.0f}s",
                     "Index blends observed ball control, players near the ball and territory where available",
                 ],
             }
@@ -363,7 +382,7 @@ def momentum_moments(rows, series, settings, names):
                     "end": rows[end]["t"] + settings.bin_seconds,
                     "team": team,
                     "score": min(1.0, mean * min(1.0, length / 10) * 1.4),
-                    "confidence": confidence_word(support),
+                    "confidence": confidence_word(support, ball_share(rows, start, end)),
                     "title": f"{names[team]} sustain pressure for {length * settings.bin_seconds:.0f}s",
                     "evidence": [
                         f"Momentum index stayed at or beyond {settings.pressure_level:.2f} for {names[team]} (mean {mean:.2f})",
@@ -409,7 +428,7 @@ def zone_moments(frames, rows, settings, config, names):
         if current and (
             record is None
             or side != current["side"]
-            or record["t"] - current["last"] > 0.3
+            or record["t"] - current["last"] > settings.max_gap
         ):
             if current["last"] - current["start"] >= settings.box_min_seconds:
                 moments.append(box_moment(current, settings, config, names))
@@ -437,7 +456,12 @@ def zone_moments(frames, rows, settings, config, names):
 def box_moment(run, settings, config, names):
     duration = run["last"] - run["start"]
     owner = [p for p in run["possession"] if p in TEAMS]
-    team = max(TEAMS, key=owner.count) if owner else None
+    # A tie is no evidence either way: fall through to player superiority.
+    team = (
+        max(TEAMS, key=owner.count)
+        if owner and owner.count("A") != owner.count("B")
+        else None
+    )
     source = "observed ball control"
     if team is None:
         counts = np.sum(np.asarray(run["superiority"]), axis=0)
@@ -473,29 +497,38 @@ def fast_ball_moments(ball_speeds, settings):
     for item in ball_speeds + [None]:
         # Above ~30 m/s is faster than any kick; treat it as a mapping glitch.
         if item is not None and settings.fast_ball_mps <= item[1] <= 30:
+            # Samples either side of a missing-ball or shot gap are unrelated spikes.
+            if run and item[0] - run[-1][0] > settings.max_gap:
+                moments.extend(fast_ball_run(run, settings))
+                run = []
             run.append(item)
             continue
         if run:
-            peak = max(run, key=lambda r: r[1])
-            if len(run) >= 2 or peak[1] >= settings.fast_ball_mps * 1.3:
-                moments.append(
-                    {
-                        "type": "fast_ball",
-                        "t": run[0][0],
-                        "start": run[0][0],
-                        "end": run[-1][0],
-                        "team": None,
-                        "score": min(1.0, 0.4 + (peak[1] - settings.fast_ball_mps) / 20),
-                        "confidence": "low",
-                        "title": "Fast ball movement (pass or shot candidate)",
-                        "evidence": [
-                            f"Observed ball moved at {peak[1]:.1f} m/s over consecutive samples",
-                            "Speed from detector positions; mapping noise can inflate it",
-                        ],
-                    }
-                )
+            moments.extend(fast_ball_run(run, settings))
             run = []
     return moments
+
+
+def fast_ball_run(run, settings):
+    peak = max(run, key=lambda r: r[1])
+    if len(run) < 2 and peak[1] < settings.fast_ball_mps * 1.3:
+        return []
+    return [
+        {
+            "type": "fast_ball",
+            "t": run[0][0],
+            "start": run[0][0],
+            "end": run[-1][0],
+            "team": None,
+            "score": min(1.0, 0.4 + (peak[1] - settings.fast_ball_mps) / 20),
+            "confidence": "low",
+            "title": "Fast ball movement (pass or shot candidate)",
+            "evidence": [
+                f"Observed ball moved at {peak[1]:.1f} m/s over consecutive samples",
+                "Speed from detector positions; mapping noise can inflate it",
+            ],
+        }
+    ]
 
 
 def crowd_moments(frames, settings, names):
@@ -511,7 +544,7 @@ def crowd_moments(frames, settings, names):
             if len(near) >= settings.crowd_players:
                 crowd = len(near)
         if current and (
-            crowd is None or record["t"] - current["last"] > 0.3
+            crowd is None or record["t"] - current["last"] > settings.max_gap
         ):
             if current["last"] - current["start"] >= settings.crowd_min_seconds:
                 moments.append(
@@ -562,7 +595,7 @@ def tempo_moments(rows, settings):
                     "start": run[0][0],
                     "end": run[-1][0] + settings.bin_seconds,
                     "team": None,
-                    "score": min(1.0, 0.3 + (mean / median - 1) * 1.2),
+                    "score": min(1.0, 0.3 + (mean / max(median, 0.5) - 1) * 1.2),
                     "confidence": "low",
                     "title": f"Tempo surge: visible players average {mean:.1f} m/s",
                     "evidence": [
@@ -726,27 +759,26 @@ def tactic_notes(shapes, rows, frames, settings, config, metadata, names):
                 add(kind, None, run[0], run[-1], text.format(g=g), {"centroid_gap_m": round(float(g), 1)}, n)
     # Numerical superiority around the ball or camera focus.
     key = {int(r["t"] // settings.bin_seconds): r for r in rows}
-    runs_ = consecutive(
-        sorted(key),
-        lambda k: key[k].get("near_anchor") is not None
-        and abs(key[k]["near_anchor"][0] - key[k]["near_anchor"][1]) >= 2,
-    )
-    for run in runs_:
-        if len(run) < 2:
-            continue
-        near = np.mean([key[k]["near_anchor"] for k in run], axis=0)
-        team = "A" if near[0] > near[1] else "B"
-        kinds = [key[k].get("anchor_kind") for k in run]
-        where = "the ball" if kinds.count("ball") * 2 >= len(kinds) else "the camera focus"
-        add(
-            "overload",
-            team,
-            run[0] * settings.bin_seconds,
-            run[-1] * settings.bin_seconds,
-            f"{names[team]} outnumber the opposition among the six players nearest {where}: about {max(near):.0f} v {min(near):.0f}",
-            {"near_A": round(float(near[0]), 1), "near_B": round(float(near[1]), 1)},
-            int(round(near.sum())),
-        )
+    for team, sign in (("A", 1), ("B", -1)):
+        for run in consecutive(
+            sorted(key),
+            lambda k, sign=sign: key[k].get("near_anchor") is not None
+            and sign * (key[k]["near_anchor"][0] - key[k]["near_anchor"][1]) >= 2,
+        ):
+            if len(run) < 2:
+                continue
+            near = np.mean([key[k]["near_anchor"] for k in run], axis=0)
+            kinds = [key[k].get("anchor_kind") for k in run]
+            where = "the ball" if kinds.count("ball") * 2 >= len(kinds) else "the camera focus"
+            add(
+                "overload",
+                team,
+                run[0] * settings.bin_seconds,
+                run[-1] * settings.bin_seconds,
+                f"{names[team]} outnumber the opposition among the six players nearest {where}: about {max(near):.0f} v {min(near):.0f}",
+                {"near_A": round(float(near[0]), 1), "near_B": round(float(near[1]), 1)},
+                int(round(near.sum())),
+            )
     notes.sort(key=lambda n: (n["start"], n["kind"]))
     deduped, last = [], {}
     for note in notes:
@@ -777,13 +809,17 @@ def consecutive(seconds, test):
 
 def build(output, config, metadata, events, size=None, settings=None):
     """Return momentum, moments, tactic notes and coverage for one analysed run."""
-    settings = settings or Settings()
+    settings = replace(
+        settings or Settings(),
+        max_gap=2.5 / config.sample_hz,
+        speed_tolerance=max(0.1, 0.6 / config.sample_hz),
+    )
     names = names_of(metadata)
     frames, bins, ball_speeds = collect(output, config, metadata, size, settings)
     if not frames:
         raise ValueError("Run contains no sampled frames")
     directions_known = bool(metadata.get("attacking_directions"))
-    rows = bin_series(bins, settings, directions_known)
+    rows = bin_series(bins, settings, metadata)
     series = smooth(rows, settings)
     moments = (
         momentum_moments(rows, series, settings, names)

@@ -7,7 +7,16 @@ from pathlib import Path
 import numpy as np
 
 from match_analysis.config import Config
-from match_analysis.insights import Settings, build, camera_focus, in_box
+from match_analysis.hashing import digest
+from match_analysis.insights import (
+    Settings,
+    build,
+    camera_focus,
+    confidence_word,
+    fast_ball_moments,
+    in_box,
+    tactic_notes,
+)
 from match_analysis.viewer import export_viewer, frame_payload, team_colours
 
 SIZE = [1920, 1080]
@@ -70,7 +79,7 @@ def write_run(root, config, frames, events=(), video=None):
     signature = {
         "config": config.as_dict(),
         "metadata": {},
-        "video_sha256": "0" * 64,
+        "video_sha256": digest(video) if video else "0" * 64,
         "model_sha256": "1" * 64,
     }
     (root / "manifest.json").write_text(
@@ -268,6 +277,124 @@ class InsightTests(unittest.TestCase):
         self.assertGreaterEqual(surge[0]["start"], 15)
         self.assertEqual(surge[0]["confidence"], "low")
 
+    def test_zero_tempo_baseline_does_not_divide_by_zero(self):
+        frames = []
+        for i in range(300):
+            t = i / 10
+            run = max(0.0, t - 20) * 5.0
+            frames.append(
+                make_frame(
+                    self.config,
+                    t,
+                    (50 + run, 34),
+                    [(x + run, y) for x, y in squad(40, 34)],
+                    [(x + run, y) for x, y in squad(55, 34, n=7)],
+                    "A",
+                )
+            )
+        result = self.run_build(frames)
+        surge = [m for m in result["moments"] if m["type"] == "tempo_surge"]
+        self.assertEqual(len(surge), 1)
+        self.assertTrue(0 <= surge[0]["score"] <= 1)
+
+    def test_tempo_survives_high_sample_rates(self):
+        self.config = Config(sample_hz=25.0)
+        frames = []
+        for i in range(25 * 12):
+            t = i / 25
+            run = 3.0 * t
+            frames.append(
+                make_frame(
+                    self.config,
+                    t,
+                    (50 + run, 34),
+                    [(x + run, y) for x, y in squad(40, 34)],
+                    [(x + run, y) for x, y in squad(55, 34, n=7)],
+                    "A",
+                )
+            )
+        speeds = [m.get("intensity_mps") for m in self.run_build(frames)["momentum"]]
+        self.assertTrue(any(v is not None and 2 < v < 4 for v in speeds), speeds)
+
+    def test_low_sample_rate_still_forms_box_runs(self):
+        self.config = Config(sample_hz=2.0)
+        frames = [
+            make_frame(
+                self.config, i / 2, (95, 34), squad(92, 34, spread=(8, 10)), squad(100, 34, n=6, spread=(8, 10)), "A"
+            )
+            for i in range(20)
+        ]
+        moments = self.run_build(frames)["moments"]
+        self.assertTrue([m for m in moments if m["type"] == "box_entry"])
+
+    def test_swing_evidence_does_not_sign_team_b_peaks(self):
+        frames = []
+        for i in range(300):
+            t = i / 10
+            first_half = t < 14
+            ball = (88, 34) if first_half else (17, 34)
+            attackers = squad(85 if first_half else 20, 34, spread=(8, 10))
+            defenders = squad(98 if first_half else 7, 34, n=6, spread=(8, 10))
+            a, b = (attackers, defenders) if first_half else (defenders, attackers)
+            frames.append(make_frame(self.config, t, ball, a, b, "A" if first_half else "B"))
+        swing = [m for m in self.run_build(frames)["moments"] if m["type"] == "momentum_swing"][0]
+        self.assertNotIn("+", swing["evidence"][0])
+        self.assertIn("in favour of Team B", swing["evidence"][0])
+
+    def test_medium_confidence_needs_observed_ball_evidence(self):
+        self.assertEqual(confidence_word(0.9, 0.9), "medium")
+        self.assertEqual(confidence_word(0.9, 0.0), "low")
+        self.assertEqual(confidence_word(0.2, 1.0), "low")
+
+    def test_fast_ball_runs_split_at_observation_gaps(self):
+        settings = Settings()
+        spike = lambda t: (t, 20.0, (0, 0), (1, 1))
+        self.assertEqual(fast_ball_moments([spike(1.0), spike(9.0)], settings), [])
+        joined = fast_ball_moments([spike(1.0), spike(1.1)], settings)
+        self.assertEqual(len(joined), 1)
+        self.assertLess(joined[0]["end"] - joined[0]["start"], 0.5)
+
+    def test_opposing_overloads_are_separate_notes(self):
+        rows = [
+            {"t": 0.0, "near_anchor": [4, 2], "anchor_kind": "ball"},
+            {"t": 1.0, "near_anchor": [4, 2], "anchor_kind": "ball"},
+            {"t": 2.0, "near_anchor": [2, 4], "anchor_kind": "ball"},
+            {"t": 3.0, "near_anchor": [2, 4], "anchor_kind": "ball"},
+        ]
+        notes = tactic_notes({}, rows, [], Settings(), self.config, {}, {"A": "Team A", "B": "Team B"})
+        overloads = [(n["team"], n["start"], n["end"]) for n in notes if n["kind"] == "overload"]
+        self.assertEqual(overloads, [("A", 0.0, 2.0), ("B", 2.0, 4.0)])
+
+    def test_territory_weight_only_counts_where_direction_is_known(self):
+        frames = attacking_scenario(self.config, seconds=30)
+        write_run(self.root, self.config, frames)
+        plain = build(self.root, self.config, {}, [], SIZE)
+        directed = build(
+            self.root,
+            self.config,
+            {"attacking_directions": [{"start": 0, "end": 10, "A": 1, "B": -1}]},
+            [],
+            SIZE,
+        )
+        late = lambda r: [m["support"] for m in r["momentum"] if m["t"] >= 20]
+        self.assertEqual(late(plain), late(directed))
+        self.assertTrue(any(m["components"].get("territory") is not None for m in directed["momentum"] if m["t"] < 10))
+
+    def test_tied_control_in_the_box_does_not_pick_team_a(self):
+        frames = []
+        for i in range(60):
+            t = i / 10
+            frames.append(
+                make_frame(
+                    self.config, t, (95, 34), squad(95, 34, n=6), squad(95, 34, n=6),
+                    "A" if i % 2 else "B",
+                )
+            )
+        box = [m for m in self.run_build(frames)["moments"] if m["type"] == "box_entry"]
+        self.assertEqual(len(box), 1)
+        self.assertIsNone(box[0]["team"])
+        self.assertNotIn("on top", box[0]["title"])
+
     def test_geometry_helpers(self):
         self.assertEqual(in_box([5, 34], self.config), "left")
         self.assertEqual(in_box([100, 34], self.config), "right")
@@ -320,6 +447,29 @@ class ViewerExportTests(unittest.TestCase):
             self.assertEqual(first["b"][2], 1)
             self.assertEqual(result["moments"], len(payload["moments"]))
             json.dumps(payload, allow_nan=False)
+
+    def test_export_rejects_a_different_video_and_partial_copies(self):
+        import cv2
+
+        config = Config()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+
+            def clip(name, seconds, step=1):
+                path = root / name
+                writer = cv2.VideoWriter(str(path), cv2.VideoWriter_fourcc(*"mp4v"), 10, (64, 36))
+                for i in range(int(seconds * 10)):
+                    writer.write(np.full((36, 64, 3), (i * step) % 255, dtype=np.uint8))
+                writer.release()
+                return path
+
+            analysed, other = clip("analysed.mp4", 3), clip("other.mp4", 3, step=7)
+            frames = attacking_scenario(config, seconds=1)
+            write_run(root / "run", config, frames, video=analysed)
+            with self.assertRaisesRegex(ValueError, "does not match"):
+                export_viewer(root / "run", root / "web", video=other, transcode_video=False)
+            with self.assertRaisesRegex(ValueError, "only the first"):
+                export_viewer(root / "run", root / "web", video=analysed, transcode_video=False)
 
     def test_predicted_people_have_no_pixels_and_unassigned_kinds(self):
         config = Config()

@@ -28,6 +28,8 @@
     return `${m}:${String(s).padStart(2, '0')}`;
   };
   const fmt1 = (t) => `${fmt(t)}.${Math.floor((t % 1) * 10)}`;
+  const esc = (value) =>
+    String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
   const lerp = (a, b, k) => a + (b - a) * k;
   const teamColour = (team) => (team ? colours[team] : NEUTRAL);
@@ -681,10 +683,10 @@
     const t = xToTime(g, x);
     let html;
     if (moment) {
-      html = `<b>${moment.title}</b><br>${fmt1(moment.t)} &middot; ${moment.confidence} confidence`;
+      html = `<b>${esc(moment.title)}</b><br>${fmt1(moment.t)} &middot; ${moment.confidence} confidence`;
     } else {
       const m = momentumAt(t);
-      const who = m.value == null ? null : m.value >= 0 ? names.A : names.B;
+      const who = m.value == null ? null : esc(m.value >= 0 ? names.A : names.B);
       html = `<b>${fmt1(t)}</b><br>` +
         (m.value == null
           ? 'No reliable momentum signal here'
@@ -765,7 +767,7 @@
         tag = kind ? `<span class="tag ${kind}">${kind}</span>` : '<span class="tag">typical</span>';
         body = `<small>${row.depth.toFixed(0)} m deep &times; ${row.width.toFixed(0)} m wide &middot; clip median depth ${stats.depth_median.toFixed(0)} m &middot; ${row.n} players</small>`;
       }
-      return `<div class="shape-row"><i style="background:${colours[team]}"></i><div><b>${names[team]}</b>${body}</div>${tag}</div>`;
+      return `<div class="shape-row"><i style="background:${colours[team]}"></i><div><b>${esc(names[team])}</b>${body}</div>${tag}</div>`;
     }).join('');
     if (html !== updateShape.last) {
       updateShape.last = html;
@@ -813,7 +815,7 @@
     $('status').innerHTML = [
       f.e ? chip('on', 'Wide view mapped') : chip('off', 'Excluded view'),
       chip(ball && ball.o ? 'on' : '', `Ball <b>${ball ? (ball.o ? 'observed' : 'predicted') : 'not seen'}</b>`),
-      chip(f.c ? 'on' : '', `Control <b>${f.c ? names[f.c] : 'unknown'}</b>`),
+      chip(f.c ? 'on' : '', `Control <b>${f.c ? esc(names[f.c]) : 'unknown'}</b>`),
       chip('', `<b style="color:${colours.A}">${counts[0]}</b> v <b style="color:${colours.B}">${counts[1]}</b> observed`),
     ].join('');
     $('videoState').className = `video-state${f.e ? '' : ' on'}`;
@@ -821,16 +823,16 @@
     const m = momentumAt(t);
     $('now').innerHTML = m.value == null
       ? 'Momentum: <b>no reliable signal</b>'
-      : `Momentum: <b style="color:${m.value >= 0 ? colours.A : colours.B}">${m.value >= 0 ? names.A : names.B} ${m.value >= 0 ? '+' : '−'}${Math.abs(m.value).toFixed(2)}</b> &middot; support ${Math.round(m.support * 100)}%`;
+      : `Momentum: <b style="color:${m.value >= 0 ? colours.A : colours.B}">${esc(m.value >= 0 ? names.A : names.B)} ${m.value >= 0 ? '+' : '−'}${Math.abs(m.value).toFixed(2)}</b> &middot; support ${Math.round(m.support * 100)}%`;
   }
 
   function buildStatic() {
     $('teams').innerHTML = ['A', 'B']
-      .map((k) => `<div class="team-pill"><i style="background:${colours[k]}"></i>${names[k]}</div>`)
+      .map((k) => `<div class="team-pill"><i style="background:${colours[k]}"></i>${esc(names[k])}</div>`)
       .join('');
     $('legend').innerHTML = [
-      `<span><i style="background:${colours.A}"></i>${names.A} ahead</span>`,
-      `<span><i style="background:${colours.B}"></i>${names.B} ahead</span>`,
+      `<span><i style="background:${colours.A}"></i>${esc(names.A)} ahead</span>`,
+      `<span><i style="background:${colours.B}"></i>${esc(names.B)} ahead</span>`,
       '<span><i style="background:rgba(138,155,179,.4)"></i>no reliable signal</span>',
     ].join('');
     const c = D.coverage;
@@ -845,7 +847,7 @@
       meter('Momentum supported', c.momentum_supported_fraction, pct(c.momentum_supported_fraction)),
       meter('Outfield players observed', c.mean_observed_players / 20, `${c.mean_observed_players.toFixed(1)} of 20`),
     ].join('');
-    $('limits').innerHTML = D.limitations.map((l) => `<li>${l}</li>`).join('');
+    $('limits').innerHTML = D.limitations.map((l) => `<li>${esc(l)}</li>`).join('');
     const foot = [];
     if (D.source.hardware) foot.push(`computed on ${D.source.hardware}`);
     if (D.source.samples_per_compute_second) foot.push(`${D.source.samples_per_compute_second.toFixed(2)} sampled frames/s`);
@@ -966,7 +968,20 @@
     } catch (error) {
       const box = $('error');
       box.hidden = false;
-      box.innerHTML = `<b>Could not load the analysis.</b><br>${error.message}<br><br>This page fetches <code>${base}analysis.json</code>. Serve the folder over HTTP, for example <code>python -m http.server -d web</code>, rather than opening the file directly.`;
+      // Built from text nodes: the data path comes from the URL.
+      box.textContent = '';
+      const add = (tag, text) => {
+        const el = document.createElement(tag);
+        el.textContent = text;
+        box.appendChild(el);
+        return el;
+      };
+      add('b', 'Could not load the analysis.');
+      add('p', error.message);
+      const hint = add('p', `This page fetches ${base}analysis.json. Serve the folder over HTTP, for example `);
+      const code = document.createElement('code');
+      code.textContent = 'python -m http.server -d web';
+      hint.append(code, ', rather than opening the file directly.');
       return;
     }
     if (D.schema_version !== 1) {
