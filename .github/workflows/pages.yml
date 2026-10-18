@@ -30,9 +30,8 @@ jobs:
           python-version: '3.12'
       - name: Check the committed viewer data
         run: python -m unittest tests.test_viewer_data
+      # Pages must already be enabled; GITHUB_TOKEN cannot perform first-time enablement.
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web
