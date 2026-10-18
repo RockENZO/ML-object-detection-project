@@ -82,7 +82,14 @@ def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=F
     start=time.monotonic()
     if resume:
         # Continue an interrupted run from its own last.pt; optimiser, schedule and epoch counter are restored.
-        YOLO(str(run/name/'weights/last.pt')).train(resume=True)
+        # The checkpoint's own arguments win, so validation and the report describe what was actually trained.
+        from ultralytics.nn.tasks import torch_safe_load
+        last=run/name/'weights/last.pt'
+        saved=torch_safe_load(str(last))[0]['train_args']
+        for key in ('data','epochs','imgsz','batch','seed','deterministic','device','patience'):
+            options[key]=saved[key]
+        imgsz,device=options['imgsz'],options['device']
+        YOLO(str(last)).train(resume=True)
     else:
         YOLO(str(ROOT/'models/yolov8s.pt')).train(**options)
     checkpoint=run/name/'weights/best.pt'
@@ -106,8 +113,8 @@ if __name__=='__main__':
     parser.add_argument('--epochs',type=int,default=80)
     parser.add_argument('--imgsz',type=int,default=640)
     parser.add_argument('--device',default='mps',help='mps, cpu, or CUDA device index')
-    parser.add_argument('--name',help='run name under --run (default: the variant); use a new name for each experiment')
-    parser.add_argument('--resume',action='store_true',help='continue the interrupted run called --name from its last.pt')
+    parser.add_argument('--name',help='run name under --run (default: the variant); use a new name for each experiment. finalize_study.py only reads the canonical base/improved names, so name runs you mean to finalize accordingly')
+    parser.add_argument('--resume',action='store_true',help='continue the interrupted run called --name from its last.pt, with the settings stored in that checkpoint')
     args=parser.parse_args()
     if args.command=='prepare':
         m=prepare(args.output);n=augment(args.output);print(json.dumps({'counts':m['counts'],'final_groups':m['final_groups'],'ball_crops':n}))
