@@ -70,26 +70,38 @@ def augment(output):
     return len(crop_manifest)
 
 
-def train(output, run, variant, epochs, imgsz, device="mps"):
+def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=False):
     import platform
     import torch
     import ultralytics
     from ultralytics import YOLO
+    name=name or variant
     options=dict(data=str((output/(variant+'.yaml')).resolve()),epochs=epochs,imgsz=imgsz,batch=8,
                  seed=42,deterministic=True,device=device,workers=0,patience=20,
-                 project=str(run.resolve()),name=variant,exist_ok=False,plots=True)
+                 project=str(run.resolve()),name=name,exist_ok=resume,plots=True)
     start=time.monotonic()
-    model=YOLO(str(ROOT/'models/yolov8s.pt'));model.train(**options)
-    checkpoint=run/variant/'weights/best.pt'
+    if resume:
+        # Continue an interrupted run from its own last.pt; optimiser, schedule and epoch counter are restored.
+        # The checkpoint's own arguments win, so validation and the report describe what was actually trained.
+        from ultralytics.nn.tasks import torch_safe_load
+        last=run/name/'weights/last.pt'
+        saved=torch_safe_load(str(last))[0]['train_args']
+        for key in ('data','epochs','imgsz','batch','seed','deterministic','device','patience'):
+            options[key]=saved[key]
+        imgsz,device=options['imgsz'],options['device']
+        YOLO(str(last)).train(resume=True)
+    else:
+        YOLO(str(ROOT/'models/yolov8s.pt')).train(**options)
+    checkpoint=run/name/'weights/best.pt'
     # validation only; final test evaluation is a separate explicit operation.
-    selected=YOLO(str(checkpoint));metrics=selected.val(data=options['data'],split='val',imgsz=imgsz,device=device,batch=4,project=str(run.resolve()),name=variant+'-validation',plots=True)
+    selected=YOLO(str(checkpoint));metrics=selected.val(data=options['data'],split='val',imgsz=imgsz,device=device,batch=4,project=str(run.resolve()),name=name+'-validation',plots=True)
     report={'variant':variant,'checkpoint_sha256':digest(checkpoint),'initial_checkpoint_sha256':digest(ROOT/'models/yolov8s.pt'),
             'split_manifest_sha256':digest(output/'manifest.json'),'augmentation_sha256':digest(output/'augmentation.json') if variant=='improved' else None,
             'options':{k:v for k,v in options.items() if k not in ['data','project']},'data_role':variant+'.yaml',
             'validation':{'map50':float(metrics.box.map50),'map50_95':float(metrics.box.map),'precision':float(metrics.box.mp),'recall':float(metrics.box.mr),'per_class':metrics.summary()},
             'runtime':{'python':platform.python_version(),'torch':torch.__version__,'ultralytics':ultralytics.__version__},'elapsed_seconds':time.monotonic()-start,
             'determinism':'MPS includes nondeterministic operators; exact repeats are not guaranteed.'}
-    (run/(variant+'-selection.json')).write_text(json.dumps(report,indent=2,default=lambda x:x.item())+'\n')
+    (run/(name+'-selection.json')).write_text(json.dumps(report,indent=2,default=lambda x:x.item())+'\n')
     print(json.dumps(report['validation'],default=lambda x:x.item()),flush=True)
 
 if __name__=='__main__':
@@ -101,7 +113,9 @@ if __name__=='__main__':
     parser.add_argument('--epochs',type=int,default=80)
     parser.add_argument('--imgsz',type=int,default=640)
     parser.add_argument('--device',default='mps',help='mps, cpu, or CUDA device index')
+    parser.add_argument('--name',help='run name under --run (default: the variant); use a new name for each experiment. finalize_study.py only reads the canonical base/improved names, so name runs you mean to finalize accordingly')
+    parser.add_argument('--resume',action='store_true',help='continue the interrupted run called --name from its last.pt, with the settings stored in that checkpoint')
     args=parser.parse_args()
     if args.command=='prepare':
         m=prepare(args.output);n=augment(args.output);print(json.dumps({'counts':m['counts'],'final_groups':m['final_groups'],'ball_crops':n}))
-    else:train(args.output,args.run,args.variant,args.epochs,args.imgsz,args.device)
+    else:train(args.output,args.run,args.variant,args.epochs,args.imgsz,args.device,args.name,args.resume)

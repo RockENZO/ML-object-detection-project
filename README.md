@@ -18,7 +18,7 @@ python -m match_analysis export-viewer --run artifacts/match --output web/data  
 python -m http.server -d web 8000
 ```
 
-How each number is derived, the data contract and the limits are in [docs/VIEWER.md](docs/VIEWER.md). The committed demo (`web/data`) was produced from the bundled 30 s clip with a **12-epoch CPU-trained checkpoint** (validation mAP50 0.69, see [the report](reports/demo_detector_cpu12_20261017.json)), not the 80-epoch model behind the published results below, and the ball is detected on only part of the clip. Everything in the viewer is an estimate and the existing release gates still apply. Re-running the commands above with a stronger checkpoint regenerates the demo.
+How each number is derived, the data contract and the limits are in [docs/VIEWER.md](docs/VIEWER.md). The committed demo (`web/data`) was produced from the bundled 30 s clip with a **CPU-trained checkpoint** (up to 100 epochs, early-stopped at 72; validation mAP50 0.75, ball mAP50 0.33, see [the report](reports/demo_detector_cpu100_20261018.json)), not the 80-epoch model behind the published results below. The ball is still detected with low recall, so observed ball control covers only about 6% of the clip and the momentum index leans on player positions and the camera focus. Everything in the viewer is an estimate and the existing release gates still apply. Re-running the commands above with a stronger checkpoint regenerates the demo.
 
 ## Current evidence and model availability
 
