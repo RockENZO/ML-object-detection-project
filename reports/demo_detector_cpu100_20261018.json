@@ -1,0 +1,78 @@
+{
+  "variant": "improved",
+  "checkpoint_sha256": "3789dd0ce7886d6ff4638bd1eeb0d6ec151b9d36ea693269331a1ad64f8264cb",
+  "initial_checkpoint_sha256": "268e5bb54c640c96c3510224833bc2eeacab4135c6deb41502156e39986b562d",
+  "split_manifest_sha256": "170d283fb4e2f2d4f6d14ea14f68df629ac5d4ba1310c5ebdca0786cc8e53756",
+  "augmentation_sha256": "d534c650afcd991fce4c1874f729f09f8759dac83b3d7b6e6741399ab9143c97",
+  "options": {
+    "epochs": "100 requested; early stopping (patience 20) ended training after epoch 72, best epoch 52",
+    "imgsz": 640,
+    "batch": 8,
+    "seed": 42,
+    "deterministic": true,
+    "device": "cpu",
+    "workers": 0,
+    "patience": 20,
+    "name": "improved-100ep",
+    "exist_ok": true,
+    "plots": true
+  },
+  "data_role": "improved.yaml",
+  "validation": {
+    "map50": 0.7507329201294406,
+    "map50_95": 0.508277934332513,
+    "precision": 0.80673386533845,
+    "recall": 0.6887221230652532,
+    "per_class": [
+      {
+        "Class": "ball",
+        "Images": 109,
+        "Instances": 112,
+        "Box-P": 0.82093,
+        "Box-R": 0.16381,
+        "Box-F1": 0.27313,
+        "mAP50": 0.32873,
+        "mAP50-95": 0.09799
+      },
+      {
+        "Class": "goalkeeper",
+        "Images": 92,
+        "Instances": 95,
+        "Box-P": 0.73527,
+        "Box-R": 0.89474,
+        "Box-F1": 0.80721,
+        "mAP50": 0.89236,
+        "mAP50-95": 0.64243
+      },
+      {
+        "Class": "player",
+        "Images": 122,
+        "Instances": 2437,
+        "Box-P": 0.93919,
+        "Box-R": 0.93886,
+        "Box-F1": 0.93902,
+        "mAP50": 0.97551,
+        "mAP50-95": 0.75861
+      },
+      {
+        "Class": "referee",
+        "Images": 122,
+        "Instances": 295,
+        "Box-P": 0.73155,
+        "Box-R": 0.75748,
+        "Box-F1": 0.74429,
+        "mAP50": 0.80634,
+        "mAP50-95": 0.53408
+      }
+    ]
+  },
+  "runtime": {
+    "python": "3.13.16",
+    "torch": "2.14.1+cu130",
+    "ultralytics": "8.3.200"
+  },
+  "elapsed_seconds": 22664.731174529,
+  "determinism": "CPU run with deterministic=True; training was interrupted once after epoch 1 and resumed from last.pt, so an exact repeat is not guaranteed.",
+  "note": "Detector behind the committed web demo: fresh COCO-initialised four-class YOLOv8s, 100-epoch budget at 640 px on 4 CPU cores, same data and settings as the 80-epoch study. Validation partition only; no test evaluation was run on this checkpoint. Replaces the 12-epoch demo detector (validation mAP50 0.691, mAP50-95 0.456, ball mAP50 0.099).",
+  "elapsed_seconds_note": "elapsed_seconds covers the resumed segment only"
+}
