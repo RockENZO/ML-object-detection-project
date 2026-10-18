@@ -219,9 +219,16 @@ def collect(output, config, metadata, size, settings):
                 speed = math.dist(ball_xy, previous_ball[1]) / (t - previous_ball[0])
                 if speed <= 40:
                     ball_speeds.append((t, speed, previous_ball[1], ball_xy))
+                else:
+                    ball_speeds.append(None)
+            elif ball_speeds:
+                # Time proximity alone cannot join observations across a cut.
+                ball_speeds.append(None)
             previous_ball = (t, ball_xy, frame["shot"])
         else:
             previous_ball = None
+            if ball_speeds:
+                ball_speeds.append(None)
         for person in players:
             samples = history[person["id"]]
             samples.append((t, person["xy"]))

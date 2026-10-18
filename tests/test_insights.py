@@ -354,6 +354,15 @@ class InsightTests(unittest.TestCase):
         self.assertEqual(len(joined), 1)
         self.assertLess(joined[0]["end"] - joined[0]["start"], 0.5)
 
+    def test_fast_ball_spikes_do_not_merge_across_adjacent_camera_cuts(self):
+        frames = []
+        for i, x in enumerate([40, 42, 40, 42]):
+            frame = make_frame(self.config, i / 10, (x, 34), squad(x, 34), squad(x + 5, 34))
+            frame['shot'] = i // 2
+            frames.append(frame)
+        result = self.run_build(frames)
+        self.assertEqual([m for m in result['moments'] if m['type'] == 'fast_ball'], [])
+
     def test_opposing_overloads_are_separate_notes(self):
         rows = [
             {"t": 0.0, "near_anchor": [4, 2], "anchor_kind": "ball"},

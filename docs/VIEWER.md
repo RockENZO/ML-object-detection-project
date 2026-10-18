@@ -79,6 +79,21 @@ Notes describe what is visible, never a full formation, defensive line, running 
 
 `analysis.json` (`schema_version` 1) holds: `source` (video files, size, duration, model/video hashes, hardware and throughput), `pitch`, `teams`, `summary`, `coverage`, `momentum` (per-bin value, support, components, anchor), `moments`, `tactics`, `limitations` and `frames`. Each frame is `{t, s, e, p, b, c, h}`: time, shot index, eligible flag, people rows `[id, kind, x, y, observed, x1, y1, x2, y2]` (kind 0/1 team A/B, 2 unassigned player, 3 goalkeeper, 4 referee), ball `[x, y, observed, px, py, airborne]`, observed controlling team, and the image-to-pitch homography. `tests/test_viewer_data.py` checks the committed payload on every deploy.
 
+## Publishing with GitHub Pages
+
+Enable Pages once in the repository settings and select **GitHub Actions** as the
+publishing source. The existing workflow then validates and publishes `web/` on
+relevant changes to `main`. `actions/configure-pages` uses the normal workflow
+token to configure an existing site; it cannot enable a new site with that token.
+If the site is not enabled, complete the one-time settings step before rerunning.
+No personal access token or additional administration permission is required by
+this workflow. See the [action's enablement contract](https://github.com/actions/configure-pages/blob/v5/action.yml).
+
+Fast-ball candidates are separated at shot changes, missing observations and
+rejected speed samples even when the timestamps on either side are close. This
+changes future exports; previously recorded demo artifacts remain historical
+outputs and are not a new model evaluation.
+
 ## Limits worth knowing
 
 - Ball recall is the weak link: the detector's held-out ball AP50 is 0.58 and a broadcast ball is a few pixels wide, so ball-based components are often missing and the index leans on the camera-focus proxy.
