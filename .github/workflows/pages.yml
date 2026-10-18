@@ -31,6 +31,8 @@ jobs:
       - name: Check the committed viewer data
         run: python -m unittest tests.test_viewer_data
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web
