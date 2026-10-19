@@ -53,6 +53,24 @@ Fine-tuning from a finished run is allowed here because that run trained on the 
 
 Selection reports are validation-only. A final test evaluation is a separate, deliberate step (`finalize_study.py`, which reads the canonical `base` and `improved` run names only).
 
+## Checking robustness
+
+`tools/robustness_check.py` re-runs the validation split with one corruption at a time (blur, darker, brighter, heavy JPEG, half resolution, sensor noise) and writes the metrics per condition:
+
+```bash
+python tools/robustness_check.py --weights best.pt --imgsz 1280 --output reports/robustness.json
+```
+
+It reads validation images only. It shows how stable a detector is on this dataset, not how it generalises to other leagues, cameras or lighting; that needs an independent test set. Reports for the detectors fine-tuned so far are in `reports/robustness_*_20261019.json`.
+
+## Weights
+
+Trained weights are not committed to `main`. Finished detectors are stored as a single `best.pt` plus a README (with its sha256 and validation metrics) on branches named `weights-*`, for example `weights-ball-1280-robust` (the detector behind the committed demo). Fetch one without switching branches:
+
+```bash
+git fetch origin weights-ball-1280-robust && git show origin/weights-ball-1280-robust:best.pt > train-input/best.pt
+```
+
 ## Licence of what you train
 
 Weights trained with Ultralytics are covered by AGPL-3.0, like the rest of this repository (see [LICENSE](../LICENSE) and [NOTICE.md](../NOTICE.md)).

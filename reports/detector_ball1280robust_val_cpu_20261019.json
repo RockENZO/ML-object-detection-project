@@ -1,0 +1,49 @@
+{
+  "variant": "improved",
+  "checkpoint_sha256": "5c5674f7775fd67b9ef6cd49a62ab8bc9aba5187bece9cc420897af5060ed3d3",
+  "options": {
+    "imgsz": 1280,
+    "device": "cpu",
+    "note": "validation re-run on CPU in the cloud environment; split reproduced from the grouped manifest; per-class image counts omitted because the evaluator reported 0"
+  },
+  "validation": {
+    "map50": 0.8947505411389334,
+    "map50_95": 0.6572237861871107,
+    "precision": 0.9207006751559568,
+    "recall": 0.8528237875967845,
+    "per_class": [
+      {
+        "Class": "ball",
+        "Instances": 112,
+        "Box-P": 0.9578749745337741,
+        "Box-R": 0.6090978268352789,
+        "mAP50": 0.7189938286413433,
+        "mAP50-95": 0.38383851596630825
+      },
+      {
+        "Class": "goalkeeper",
+        "Instances": 95,
+        "Box-P": 0.9242474282624353,
+        "Box-R": 0.8990390920502211,
+        "mAP50": 0.9451122067642266,
+        "mAP50-95": 0.7579914174089254
+      },
+      {
+        "Class": "player",
+        "Instances": 2437,
+        "Box-P": 0.9540725377976392,
+        "Box-R": 0.9811243331965531,
+        "mAP50": 0.991026468725863,
+        "mAP50-95": 0.8211895753173903
+      },
+      {
+        "Class": "referee",
+        "Instances": 295,
+        "Box-P": 0.846607760029978,
+        "Box-R": 0.9220338983050848,
+        "mAP50": 0.923869660424301,
+        "mAP50-95": 0.6658756360558188
+      }
+    ]
+  }
+}

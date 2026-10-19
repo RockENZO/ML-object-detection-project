@@ -1,0 +1,268 @@
+{
+  "weights": "best.pt",
+  "checkpoint_sha256": "b5676be890faf7b864a6be31bce56f9d644ba69fedc567f27c4d6b86b6e26acf",
+  "split_manifest_sha256": "170d283fb4e2f2d4f6d14ea14f68df629ac5d4ba1310c5ebdca0786cc8e53756",
+  "hashes_note": "hashes added after the run, from the files the run used",
+  "imgsz": 960,
+  "split": "validation (test split untouched)",
+  "conditions": {
+    "clean": {
+      "map50": 0.864,
+      "map50_95": 0.64,
+      "ball": {
+        "precision": 1.0,
+        "recall": 0.434,
+        "map50": 0.588
+      },
+      "classes": {
+        "ball": {
+          "precision": 1.0,
+          "recall": 0.434,
+          "map50": 0.588
+        },
+        "goalkeeper": {
+          "precision": 0.892,
+          "recall": 0.954,
+          "map50": 0.961
+        },
+        "player": {
+          "precision": 0.953,
+          "recall": 0.983,
+          "map50": 0.992
+        },
+        "referee": {
+          "precision": 0.867,
+          "recall": 0.902,
+          "map50": 0.916
+        }
+      }
+    },
+    "blur_sigma_1.5": {
+      "map50": 0.869,
+      "map50_95": 0.628,
+      "ball": {
+        "precision": 0.925,
+        "recall": 0.443,
+        "map50": 0.63
+      },
+      "classes": {
+        "ball": {
+          "precision": 0.925,
+          "recall": 0.443,
+          "map50": 0.63
+        },
+        "goalkeeper": {
+          "precision": 0.918,
+          "recall": 0.926,
+          "map50": 0.961
+        },
+        "player": {
+          "precision": 0.95,
+          "recall": 0.971,
+          "map50": 0.986
+        },
+        "referee": {
+          "precision": 0.798,
+          "recall": 0.888,
+          "map50": 0.899
+        }
+      }
+    },
+    "blur_sigma_3": {
+      "map50": 0.725,
+      "map50_95": 0.438,
+      "ball": {
+        "precision": 0.529,
+        "recall": 0.232,
+        "map50": 0.286
+      },
+      "classes": {
+        "ball": {
+          "precision": 0.529,
+          "recall": 0.232,
+          "map50": 0.286
+        },
+        "goalkeeper": {
+          "precision": 0.843,
+          "recall": 0.85,
+          "map50": 0.91
+        },
+        "player": {
+          "precision": 0.946,
+          "recall": 0.911,
+          "map50": 0.954
+        },
+        "referee": {
+          "precision": 0.793,
+          "recall": 0.658,
+          "map50": 0.751
+        }
+      }
+    },
+    "darker_0.6": {
+      "map50": 0.868,
+      "map50_95": 0.647,
+      "ball": {
+        "precision": 1.0,
+        "recall": 0.367,
+        "map50": 0.606
+      },
+      "classes": {
+        "ball": {
+          "precision": 1.0,
+          "recall": 0.367,
+          "map50": 0.606
+        },
+        "goalkeeper": {
+          "precision": 0.918,
+          "recall": 0.926,
+          "map50": 0.965
+        },
+        "player": {
+          "precision": 0.965,
+          "recall": 0.983,
+          "map50": 0.992
+        },
+        "referee": {
+          "precision": 0.881,
+          "recall": 0.871,
+          "map50": 0.911
+        }
+      }
+    },
+    "brighter_1.4": {
+      "map50": 0.854,
+      "map50_95": 0.623,
+      "ball": {
+        "precision": 0.938,
+        "recall": 0.402,
+        "map50": 0.576
+      },
+      "classes": {
+        "ball": {
+          "precision": 0.938,
+          "recall": 0.402,
+          "map50": 0.576
+        },
+        "goalkeeper": {
+          "precision": 0.897,
+          "recall": 0.947,
+          "map50": 0.954
+        },
+        "player": {
+          "precision": 0.961,
+          "recall": 0.982,
+          "map50": 0.992
+        },
+        "referee": {
+          "precision": 0.861,
+          "recall": 0.864,
+          "map50": 0.894
+        }
+      }
+    },
+    "jpeg_quality_20": {
+      "map50": 0.836,
+      "map50_95": 0.577,
+      "ball": {
+        "precision": 0.906,
+        "recall": 0.431,
+        "map50": 0.54
+      },
+      "classes": {
+        "ball": {
+          "precision": 0.906,
+          "recall": 0.431,
+          "map50": 0.54
+        },
+        "goalkeeper": {
+          "precision": 0.838,
+          "recall": 0.937,
+          "map50": 0.949
+        },
+        "player": {
+          "precision": 0.946,
+          "recall": 0.983,
+          "map50": 0.992
+        },
+        "referee": {
+          "precision": 0.814,
+          "recall": 0.831,
+          "map50": 0.861
+        }
+      }
+    },
+    "half_resolution": {
+      "map50": 0.877,
+      "map50_95": 0.644,
+      "ball": {
+        "precision": 1.0,
+        "recall": 0.433,
+        "map50": 0.652
+      },
+      "classes": {
+        "ball": {
+          "precision": 1.0,
+          "recall": 0.433,
+          "map50": 0.652
+        },
+        "goalkeeper": {
+          "precision": 0.926,
+          "recall": 0.947,
+          "map50": 0.961
+        },
+        "player": {
+          "precision": 0.964,
+          "recall": 0.979,
+          "map50": 0.99
+        },
+        "referee": {
+          "precision": 0.838,
+          "recall": 0.892,
+          "map50": 0.904
+        }
+      }
+    },
+    "noise_sigma_10": {
+      "map50": 0.842,
+      "map50_95": 0.6,
+      "ball": {
+        "precision": 0.946,
+        "recall": 0.311,
+        "map50": 0.543
+      },
+      "classes": {
+        "ball": {
+          "precision": 0.946,
+          "recall": 0.311,
+          "map50": 0.543
+        },
+        "goalkeeper": {
+          "precision": 0.854,
+          "recall": 0.926,
+          "map50": 0.955
+        },
+        "player": {
+          "precision": 0.937,
+          "recall": 0.978,
+          "map50": 0.988
+        },
+        "referee": {
+          "precision": 0.828,
+          "recall": 0.847,
+          "map50": 0.883
+        }
+      }
+    }
+  },
+  "map50_drop_vs_clean": {
+    "clean": 0.0,
+    "blur_sigma_1.5": -0.005,
+    "blur_sigma_3": 0.139,
+    "darker_0.6": -0.004,
+    "brighter_1.4": 0.01,
+    "jpeg_quality_20": 0.028,
+    "half_resolution": -0.013,
+    "noise_sigma_10": 0.022
+  }
+}

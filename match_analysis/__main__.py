@@ -42,6 +42,11 @@ def main(argv=None):
         action="store_true",
         help="Recompute upper-body-overlap uncertainty from recorded pixel boxes",
     )
+    control.add_argument(
+        "--propagate-teams",
+        action="store_true",
+        help="Give unassigned player rows the team their track shows in the rest of the run (at least 5 assigned observations, 80% agreeing)",
+    )
     viewer = subs.add_parser(
         "export-viewer",
         help="Export a finished run as a static web viewer (analysis.json + clip.mp4); CPU only",
@@ -87,7 +92,9 @@ def main(argv=None):
         elif args.command == "recompute-control":
             from .control import recompute
 
-            result = recompute(args.run, args.output, args.refresh_airborne)
+            result = recompute(
+                args.run, args.output, args.refresh_airborne, args.propagate_teams
+            )
         elif args.command == "export-viewer":
             from .viewer import export_viewer
 

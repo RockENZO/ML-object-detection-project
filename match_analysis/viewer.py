@@ -220,6 +220,15 @@ def export_viewer(
         shutil.copyfile(source_video, output / video_name)
         videos = [{"src": video_name, "type": "video/mp4"}]
     frames = frame_payload(run)
+    limitations = list(LIMITATIONS)
+    propagated = manifest.get("team_labels_propagated") or {}
+    if propagated.get("enabled"):
+        limitations.append(
+            "Players whose jersey colour was unclear in some frames were given the team the same track shows "
+            "elsewhere in the clip (%d player rows, by recompute-control --propagate-teams); the possession "
+            "and momentum figures use those labels, so they rest on less direct colour evidence."
+            % propagated.get("player_rows_relabelled", 0)
+        )
     pitch = {"length": config.pitch_length, "width": config.pitch_width}
     duration = manifest["video_end"]
     extras = {
@@ -262,7 +271,7 @@ def export_viewer(
                 "possession_changes",
             )
         },
-        "limitations": LIMITATIONS,
+        "limitations": limitations,
         **insights,
         **extras,
         "frames": frames,
