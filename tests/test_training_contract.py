@@ -31,6 +31,7 @@ class TrainingContractTests(unittest.TestCase):
         self.init = self.root / 'custom.pt'
         self.init.write_bytes(b'custom initialization fixture')
         self.saved, self.calls, self.fail = {}, [], False
+        self.fail_before_checkpoint = False
         outer = self
 
         class FakeYOLO:
@@ -41,6 +42,8 @@ class TrainingContractTests(unittest.TestCase):
                 outer.calls.append(options)
                 if not options.get('resume'):
                     outer.saved = dict(options)
+                if outer.fail_before_checkpoint:
+                    raise RuntimeError('failed before first checkpoint fixture')
                 weights = outer.run / 'named/weights'
                 weights.mkdir(parents=True, exist_ok=True)
                 (weights / 'last.pt').write_bytes(b'last checkpoint fixture')
@@ -96,6 +99,19 @@ class TrainingContractTests(unittest.TestCase):
         self.fail = False
         self.train(resume=True)
         self.assertEqual(self.report()['options']['degrade_probability'], .4)
+
+    def test_resume_restarts_unstarted_run_from_original_settings(self):
+        self.fail_before_checkpoint = True
+        with self.assertRaises(RuntimeError):
+            self.train(init=self.init, degrade=.4, hyp={'lr0': .002})
+        self.assertFalse((self.run / 'named/weights/last.pt').exists())
+        self.fail_before_checkpoint = False
+        self.train(resume=True)
+        self.assertTrue(self.report()['restarted_before_first_checkpoint'])
+        self.assertIsNone(self.report()['resumed_from_checkpoint_sha256'])
+        self.assertEqual(self.calls[-1]['lr0'], .002)
+        self.assertEqual(self.report()['options']['degrade_probability'], .4)
+        self.assertTrue(self.calls[-1]['exist_ok'])
 
     def test_resume_rejects_changed_probability_hyp_and_dataset(self):
         self.train(init=self.init, degrade=.4, hyp={'lr0': .002})
@@ -165,6 +181,20 @@ class ExportContractTests(unittest.TestCase):
             self.assertNotEqual(report['training_checkpoint_sha256'], report['checkpoint_sha256'])
             self.assertEqual(json.loads((output / 'selection.json').read_text()), report)
             self.assertEqual((output / 'training.json').read_bytes(), (root / 'named-training.json').read_bytes())
+
+    def test_changed_or_missing_metadata_is_rejected_before_export(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); run = root / 'named'; (run / 'weights').mkdir(parents=True)
+            source = run / 'weights/best.pt'; source.write_bytes(b'checkpoint')
+            state = root / 'named-training.json'; state.write_text('{"original":true}')
+            (root / 'named-selection.json').write_text(json.dumps({
+                'checkpoint_sha256': digest(source), 'training_metadata_sha256': digest(state)}))
+            state.write_text('{"changed":true}')
+            for missing in [False, True]:
+                if missing: state.unlink()
+                with self.subTest(missing=missing), self.assertRaisesRegex(ValueError, 'metadata'):
+                    export_training(run, root / 'out', stripper=lambda *a: self.fail('must not strip'))
+                self.assertFalse((root / 'out').exists())
 
     def test_mismatched_source_hash_does_not_export(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -188,22 +188,38 @@ def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=F
                    project=str(run), name=name, exist_ok=False, plots=True)
     options.update(hyp or {})
     resumed_hash = None
+    checkpoint_resume = False
+    restarted_unstarted = False
     if resume:
         from ultralytics.nn.tasks import torch_safe_load
         last = run / name / 'weights/last.pt'
-        resumed_hash = digest(last)
-        saved = dict(torch_safe_load(str(last))[0]['train_args'])
+        if last.is_file():
+            resumed_hash = digest(last)
+            saved = dict(torch_safe_load(str(last))[0]['train_args'])
+            checkpoint_resume = True
+        else:
+            if (run / name / 'weights/best.pt').exists():
+                raise ValueError('Cannot restart a run with best.pt but no resumable last.pt')
+            if 'train_options' not in state:
+                raise ValueError('Pre-checkpoint retry requires originally recorded train options')
+            saved = dict(state['train_options'])
+            restart_init = init or Path(state['initial_checkpoint_path'])
+            if digest(restart_init) != state['initial_checkpoint_sha256']:
+                raise ValueError('Pre-checkpoint retry must use the original initialization bytes')
+            restarted_unstarted = True
         if (Path(saved['project']).resolve() != run or saved['name'] != name
                 or Path(saved['data']).resolve() != output / (variant + '.yaml')):
             raise ValueError('Checkpoint paths do not match this run and dataset; do not redirect a resumed run')
         if any(key not in saved or saved[key] != value for key, value in (hyp or {}).items()):
             raise ValueError('Resume HYP differs from the checkpoint settings')
-        options = {**saved, 'resume': True}
-        model = YOLO(str(last))
+        options = {**saved, **({'resume': True} if checkpoint_resume else {'exist_ok': True})}
+        model = YOLO(str(last if checkpoint_resume else restart_init))
     else:
         model = YOLO(str(fresh_init))
     run.mkdir(parents=True, exist_ok=True)
     if not resume:
+        state['initial_checkpoint_path'] = str(fresh_init.resolve())
+        state['train_options'] = dict(options)
         # Exclusively claim a fresh run even if another process passed preflight.
         # Save non-Ultralytics settings before training, including interrupted runs.
         with state_path.open('x') as handle:
@@ -211,7 +227,7 @@ def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=F
     restore = degrade_augmentation(state['degrade_probability'], state['augmentation_seed']) if state['degrade_probability'] else lambda: None
     start = time.monotonic()
     try:
-        if resume:
+        if checkpoint_resume:
             model.train(resume=True)
         else:
             model.train(**options)
@@ -229,6 +245,7 @@ def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=F
                     'degrade_probability': state['degrade_probability']},
         'data_role': variant + '.yaml', 'training_metadata_sha256': digest(state_path),
         'resumed_from_checkpoint_sha256': resumed_hash,
+        'restarted_before_first_checkpoint': restarted_unstarted,
         'validation': {'map50': float(metrics.box.map50), 'map50_95': float(metrics.box.map),
                        'precision': float(metrics.box.mp), 'recall': float(metrics.box.mr), 'per_class': metrics.summary()},
         'runtime': {'python': platform.python_version(), 'torch': torch.__version__, 'ultralytics': ultralytics.__version__},

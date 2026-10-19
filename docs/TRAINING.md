@@ -75,7 +75,12 @@ first training call. Keep that sidecar and the full run directory (`last.pt`,
 including optimizer state). Resume restores the original initialization hash,
 split/crop hashes and degradation probability even if `INIT`, `DEGRADE` and
 `HYP` are omitted. Hyperparameters in the report come from the saved checkpoint;
-explicit conflicting `HYP`, `INIT` or `DEGRADE` values are rejected.
+explicit conflicting `HYP`, `INIT` or `DEGRADE` values are rejected. If a new
+run failed before writing its first `last.pt`, `RESUME=1` safely restarts it from
+the recorded initialization path and original options (the original weights must
+still exist and match their hash). This starts at epoch zero, not from a
+checkpoint; the report marks `restarted_before_first_checkpoint`. A run with
+`best.pt` but missing `last.pt` is not restarted over its existing weights.
 
 Runs created before this metadata existed cannot be safely inferred from
 `last.pt` alone: the external degradation hook was not stored there. Such runs
@@ -97,7 +102,8 @@ Fine-tuning from a finished run is allowed here because that run trained on the 
 
 In an exported report, `checkpoint_sha256` identifies the **stripped exported**
 `best.pt`; `training_checkpoint_sha256` identifies the original checkpoint before
-stripping. The training run's own selection report remains unchanged.
+stripping. The configuration sidecar must also match its recorded hash before
+any export artifacts are written. The training run's own selection report remains unchanged.
 
 Selection reports are validation-only. A final test evaluation is a separate, deliberate step (`finalize_study.py`, which reads the canonical `base` and `improved` run names only).
 
