@@ -5,6 +5,7 @@ import json
 import math
 import shutil
 import subprocess
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import cv2
@@ -104,6 +105,34 @@ def frame_payload(run):
         }
         frames.append(entry)
     return frames
+
+
+def propagate_team_labels(frames, min_samples=5, agreement=0.8):
+    """Give a player whose jersey colour was unclear in some frames the team the same track shows elsewhere.
+
+    The team clusters are learned online, so a player can be unassigned for a few frames even
+    though the same track is clearly one team the rest of the clip. A track needs at least
+    `min_samples` assigned observations with `agreement` of them on one team. Display only:
+    the possession analysis keeps the labels it was computed with.
+    """
+    votes = defaultdict(Counter)
+    for frame in frames:
+        for row in frame["p"]:
+            if row[1] in (0, 1):
+                votes[row[0]][row[1]] += 1
+    team = {}
+    for identity, counter in votes.items():
+        total = sum(counter.values())
+        kind, count = counter.most_common(1)[0]
+        if total >= min_samples and count / total >= agreement:
+            team[identity] = kind
+    relabelled = 0
+    for frame in frames:
+        for row in frame["p"]:
+            if row[1] == 2 and row[0] in team:
+                row[1] = team[row[0]]
+                relabelled += 1
+    return relabelled
 
 
 def model_card(report, checkpoint_sha256, ball_from_other_model=False):
@@ -220,6 +249,15 @@ def export_viewer(
         shutil.copyfile(source_video, output / video_name)
         videos = [{"src": video_name, "type": "video/mp4"}]
     frames = frame_payload(run)
+    unassigned = sum(1 for f in frames for row in f["p"] if row[1] == 2)
+    relabelled = propagate_team_labels(frames)
+    limitations = list(LIMITATIONS)
+    if relabelled:
+        limitations.append(
+            "Players whose jersey colour was unclear in some frames take the team the same track shows "
+            "in the rest of the clip (%d of %d unassigned player rows); possession was not recomputed from this."
+            % (relabelled, unassigned)
+        )
     pitch = {"length": config.pitch_length, "width": config.pitch_width}
     duration = manifest["video_end"]
     extras = {
@@ -262,7 +300,7 @@ def export_viewer(
                 "possession_changes",
             )
         },
-        "limitations": LIMITATIONS,
+        "limitations": limitations,
         **insights,
         **extras,
         "frames": frames,

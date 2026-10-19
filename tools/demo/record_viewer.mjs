@@ -53,15 +53,23 @@ await page.evaluate(() => document.getElementById('video').play());
 const clock = () => page.evaluate(() => document.getElementById('video').currentTime);
 const until = async (t) => { while ((await clock()) < t) await page.waitForTimeout(150); };
 
-// Let play run, then jump to the strongest moments, then show a heatmap.
-const moments = await page.evaluate(() => [...document.querySelectorAll('.moment')].map((el) => el.dataset.id));
-await until(Math.min(8, duration * 0.25));
-if (moments.length) {
-  await page.locator('.moment').nth(Math.min(1, moments.length - 1)).click();
+// Let play run, switch on space control, follow a player, jump between moments, then show a heatmap.
+// Moments are reached with the "]" shortcut so the page does not scroll while recording.
+await until(Math.min(3, duration * 0.1));
+await page.check('#tSpace');
+await until(Math.min(7, duration * 0.25));
+if (await page.locator('#players tbody tr').count()) {
+  await page.locator('#players tbody tr').nth(1).click({ force: true });
+  await page.check('#tLabels');
   await page.waitForTimeout(3500);
-  await page.locator('.moment').nth(Math.min(3, moments.length - 1)).click();
-  await page.waitForTimeout(3500);
+  await page.locator('#clearSel').click({ force: true });
+  await page.uncheck('#tLabels');
 }
+await page.keyboard.press(']');
+await page.waitForTimeout(3200);
+await page.keyboard.press(']');
+await page.waitForTimeout(3200);
+await page.uncheck('#tSpace');
 await page.selectOption('#tHeat', 'A');
 await page.waitForTimeout(2500);
 await page.selectOption('#tHeat', '');

@@ -14,14 +14,22 @@ python -m match_analysis analyze \
   --checkpoint runs/performance-study/improved/weights/best.pt \
   --config configs/match.json --device 0 --output artifacts/match
 
+# Optional, CPU only: give unassigned player rows the team their track shows elsewhere, then recompute control.
+python -m match_analysis recompute-control --run artifacts/match --output artifacts/match-teams --propagate-teams
+
 # CPU only, repeatable on a finished run. Needs ffmpeg for the browser-friendly copies.
-python -m match_analysis export-viewer --run artifacts/match --output web/data
+python -m match_analysis export-viewer --run artifacts/match-teams --output web/data \
+  --model-report path/to/checkpoint-selection.json
 python -m http.server -d web 8000      # then open http://localhost:8000
 ```
 
 `export-viewer` writes `analysis.json` plus `clip.mp4` (H.264) and `clip.webm` (VP9, for browsers without H.264), both 720p without audio. Use `--no-transcode` to copy an already-compatible MP4. Serve `web/` over HTTP with byte-range support (GitHub Pages, `http.server` for playback, or any static host) because browsers need ranges to seek video. Other runs can be opened with `index.html?data=path/to/folder/`.
 
 Pass `--metadata` to `analyze` with attacking-direction intervals to enable the territory component and direction-aware wording (see `configs/match_metadata.example.json`). Without it the viewer states that direction is unknown and never guesses.
+
+### Matching the ball thresholds to the detector
+
+`ball_confidence` and `ball_acquire_confidence` in the config decide which ball detections the tracker accepts. They depend on how the detector's confidence is calibrated, so they must be re-chosen when the checkpoint changes. The 1280 px fine-tuned detector scores real balls low (on the validation images, ball recall is 0.33 at confidence 0.6 and 0.20 at 0.75, but 0.52 at 0.3 with precision still 0.98), so `configs/match_ball1280.json` uses 0.3 and 0.5 where `configs/match.json` uses 0.6 and 0.75. Read the thresholds off the validation precision and recall curves of the checkpoint you are using, then check that `ball_usable_fraction` in the coverage panel does not fall far below the observed fraction.
 
 ## What each panel means
 
@@ -87,7 +95,7 @@ Notes describe what is visible, never a full formation, defensive line, running 
 
 ## Data contract
 
-`analysis.json` (`schema_version` 1) holds: `source` (video files, size, duration, model/video hashes, hardware and throughput), `pitch`, `teams`, `summary`, `coverage`, `momentum` (per-bin value, support, components, anchor), `moments`, `tactics`, `limitations` and `frames`. Each frame is `{t, s, e, p, b, c, h}`: time, shot index, eligible flag, people rows `[id, kind, x, y, observed, x1, y1, x2, y2]` (kind 0/1 team A/B, 2 unassigned player, 3 goalkeeper, 4 referee), ball `[x, y, observed, px, py, airborne]`, observed controlling team, and the image-to-pitch homography. `tests/test_viewer_data.py` checks the committed payload on every deploy.
+`analysis.json` (`schema_version` 1) holds: `source` (video files, size, duration, model/video hashes, hardware and throughput), `pitch`, `teams`, `summary`, `coverage`, `momentum` (per-bin value, support, components, anchor), `moments`, `tactics`, `limitations` and `frames`, plus the optional additions `players` (per-track distance and speed rows with a speed-per-second series), `space_control` (per-second share of the camera-visible pitch nearest team A) and `model` (detector validation card). Each frame is `{t, s, e, p, b, c, h}`: time, shot index, eligible flag, people rows `[id, kind, x, y, observed, x1, y1, x2, y2]` (kind 0/1 team A/B, 2 unassigned player, 3 goalkeeper, 4 referee), ball `[x, y, observed, px, py, airborne]`, observed controlling team, and the image-to-pitch homography. `tests/test_viewer_data.py` checks the committed payload on every deploy.
 
 ## Publishing with GitHub Pages
 
@@ -106,7 +114,7 @@ outputs and are not a new model evaluation.
 
 ## Limits worth knowing
 
-- Ball recall is the weak link: the detector's held-out ball AP50 is 0.58 and a broadcast ball is a few pixels wide, so ball-based components are often missing and the index leans on the camera-focus proxy.
+- Ball recall is the weak link: the committed demo's detector has a validation ball AP50 of 0.72 and recall of about 0.61, and a broadcast ball is a few pixels wide, so ball-based components are often missing and the index leans on the camera-focus proxy.
 - Team assignment uses jersey colour only; goalkeepers and ambiguous kits stay unassigned.
 - Wide/replay segmentation is a heuristic. A missed replay can inject non-live positions; excluded intervals are shown as such.
 - One clip is a demonstration. Nothing here establishes accuracy on other matches, leagues or camera styles. Use the evaluation commands in [MATCH_ANALYSIS.md](MATCH_ANALYSIS.md) with independently reviewed labels before relying on any number.

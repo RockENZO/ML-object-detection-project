@@ -3,7 +3,7 @@
 import csv
 import json
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 from .config import Config
@@ -90,7 +90,31 @@ def export(output, config, video_end):
     return report
 
 
-def recompute(source, output, refresh_airborne=False):
+def track_teams(source, min_samples=5, agreement=0.8):
+    """Team each player track shows for most of a run, keyed by (shot, track id).
+
+    Team colours are learned online, so a player can be unassigned for some frames even
+    though the same track is clearly one team elsewhere. A track needs `min_samples`
+    assigned observations with `agreement` of them on one team.
+    """
+    votes = defaultdict(Counter)
+    for shot_file in sorted((Path(source) / "shots").glob("*.jsonl")):
+        with shot_file.open() as lines:
+            for line in lines:
+                frame = json.loads(line)
+                for person in frame["people"]:
+                    if person["role"] == "player" and person.get("team") in ("A", "B"):
+                        votes[(frame["shot"], person["id"])][person["team"]] += 1
+    teams = {}
+    for key, counter in votes.items():
+        total = sum(counter.values())
+        team, count = counter.most_common(1)[0]
+        if total >= min_samples and count / total >= agreement:
+            teams[key] = team
+    return teams
+
+
+def recompute(source, output, refresh_airborne=False, propagate_teams=False):
     """Keep detector/calibration observations intact and replace control inference.
 
     Preserve source signatures/hashes separately. This is not a new GPU benchmark,
@@ -116,6 +140,8 @@ def recompute(source, output, refresh_airborne=False):
             *sorted((source / "shots").glob("*.jsonl")),
         ]
     }
+    teams = track_teams(source) if propagate_teams else {}
+    relabelled = 0
     output.mkdir(parents=True)
     (output / "shots").mkdir()
     (output / "checkpoint.json").write_text(json.dumps({"complete": False}))
@@ -135,6 +161,15 @@ def recompute(source, output, refresh_airborne=False):
                 if frame["shot"] != prior_shot:
                     controller.reset()
                 prior_shot, prior_time = frame["shot"], frame["timestamp"]
+                for person in frame["people"] if teams else ():
+                    team = teams.get((frame["shot"], person["id"]))
+                    if (
+                        person["role"] == "player"
+                        and person.get("team") not in ("A", "B")
+                        and team
+                    ):
+                        person["team"] = team
+                        relabelled += 1
                 ball = frame["ball"]
                 if (
                     refresh_airborne
@@ -171,6 +206,7 @@ def recompute(source, output, refresh_airborne=False):
         **manifest,
         "analysis_stage": "automatic_control_reprocessing",
         "airborne_heuristic_refreshed": refresh_airborne,
+        "team_labels_propagated": {"enabled": propagate_teams, "player_rows_relabelled": relabelled},
         "source_run": str(source),
         "source_artifact_sha256": provenance,
         "source_detection_calibration_signature": manifest["signature"],
@@ -190,5 +226,9 @@ def recompute(source, output, refresh_airborne=False):
     (output / "manifest.json").write_text(
         json.dumps(derived, indent=2, allow_nan=False) + "\n"
     )
-    (output / "checkpoint.json").write_text(json.dumps({"complete": True}) + "\n")
+    # Keep the learned jersey colours: the viewer export draws the team swatches from them.
+    source_state = json.loads((source / "checkpoint.json").read_text()).get("team_state")
+    (output / "checkpoint.json").write_text(
+        json.dumps({"complete": True, "team_state": source_state}) + "\n"
+    )
     return result

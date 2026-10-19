@@ -1,0 +1,118 @@
+{
+  "note": "Same 30 s clip, CPU, produced 2026-10-19 from the artifacts of each run. Observed ball control is the share of the clip with a clear, persistent ball owner; it is an estimate, not validated.",
+  "runs": {
+    "first demo detector (72 epochs, 640 px)": {
+      "run": "match-100ep",
+      "model_sha256": "3789dd0ce788",
+      "ball_confidence": 0.6,
+      "ball_acquire_confidence": 0.75,
+      "observed_possession_percent": {
+        "A": 19.6,
+        "B": 80.4
+      },
+      "possession_coverage": 0.062,
+      "reason_seconds": {
+        "ball_outside_control_radius": 11.5,
+        "nearest_player_team_unknown": 6.5,
+        "missing_observed_ball": 4.1,
+        "awaiting_team_persistence": 5.1,
+        "stable_observed_team_control": 1.8,
+        "airborne_ball_uncertainty": 0.2,
+        "excluded_interval": 0.3,
+        "contested_between_teams": 0.4
+      },
+      "team_labels_propagated": null
+    },
+    "960 px fine-tune": {
+      "run": "match-960",
+      "model_sha256": "b5676be890fa",
+      "ball_confidence": 0.6,
+      "ball_acquire_confidence": 0.75,
+      "observed_possession_percent": {
+        "A": 18.9,
+        "B": 81.1
+      },
+      "possession_coverage": 0.05,
+      "reason_seconds": {
+        "ball_outside_control_radius": 10.9,
+        "nearest_player_team_unknown": 7.2,
+        "awaiting_team_persistence": 4.7,
+        "stable_observed_team_control": 1.5,
+        "missing_observed_ball": 4.2,
+        "airborne_ball_uncertainty": 0.7,
+        "excluded_interval": 0.3,
+        "contested_between_teams": 0.5
+      },
+      "team_labels_propagated": null
+    },
+    "1280 px fine-tune, old thresholds": {
+      "run": "match-1280",
+      "model_sha256": "64556444238b",
+      "ball_confidence": 0.6,
+      "ball_acquire_confidence": 0.75,
+      "observed_possession_percent": {
+        "A": 10.5,
+        "B": 89.5
+      },
+      "possession_coverage": 0.026,
+      "reason_seconds": {
+        "ball_outside_control_radius": 10.7,
+        "nearest_player_team_unknown": 7.9,
+        "missing_observed_ball": 5.2,
+        "awaiting_team_persistence": 4.6,
+        "stable_observed_team_control": 0.8,
+        "airborne_ball_uncertainty": 0.2,
+        "excluded_interval": 0.3,
+        "contested_between_teams": 0.3
+      },
+      "team_labels_propagated": null
+    },
+    "1280 px robust fine-tune, ball thresholds re-chosen": {
+      "run": "match-robust",
+      "model_sha256": "5c5674f7775f",
+      "ball_confidence": 0.3,
+      "ball_acquire_confidence": 0.5,
+      "observed_possession_percent": {
+        "A": 43.1,
+        "B": 56.9
+      },
+      "possession_coverage": 0.069,
+      "reason_seconds": {
+        "ball_outside_control_radius": 11.3,
+        "nearest_player_team_unknown": 8.0,
+        "awaiting_team_persistence": 4.6,
+        "stable_observed_team_control": 2.0,
+        "airborne_ball_uncertainty": 0.6,
+        "missing_observed_ball": 2.8,
+        "excluded_interval": 0.3,
+        "contested_between_teams": 0.3
+      },
+      "team_labels_propagated": null
+    },
+    "same, team labels propagated along tracks": {
+      "run": "match-robust-teams",
+      "model_sha256": "5c5674f7775f",
+      "ball_confidence": 0.3,
+      "ball_acquire_confidence": 0.5,
+      "observed_possession_percent": {
+        "A": 71.3,
+        "B": 28.7
+      },
+      "possession_coverage": 0.291,
+      "reason_seconds": {
+        "ball_outside_control_radius": 11.3,
+        "awaiting_team_persistence": 5.4,
+        "stable_observed_team_control": 8.6,
+        "airborne_ball_uncertainty": 0.6,
+        "missing_observed_ball": 2.8,
+        "excluded_interval": 0.3,
+        "nearest_player_team_unknown": 0.5,
+        "contested_between_teams": 0.4
+      },
+      "team_labels_propagated": {
+        "enabled": true,
+        "player_rows_relabelled": 1171
+      }
+    }
+  }
+}
