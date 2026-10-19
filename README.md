@@ -162,3 +162,6 @@ python yolo_inference.py --model runs/performance-study/improved/weights/best.pt
 
 This does not substantiate the historical 97.5% precision or manual-review savings claims. The historical baseline above uses a different test partition and is not the comparator for this improvement.
 
+## Licence
+
+AGPL-3.0, because the code and weights build on Ultralytics (AGPL-3.0). Third-party components, the dataset's CC BY 4.0 attribution and a note on the demo footage are in [NOTICE.md](NOTICE.md). Training in a container or in one deletable folder is described in [docs/TRAINING.md](docs/TRAINING.md).

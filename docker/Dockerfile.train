@@ -1,0 +1,27 @@
+# syntax=docker/dockerfile:1
+# Detector training image. CPU by default; for an NVIDIA GPU build with
+#   --build-arg TORCH_INDEX=https://download.pytorch.org/whl/cu128
+FROM python:3.12-slim
+
+ARG TORCH_INDEX=https://download.pytorch.org/whl/cpu
+ENV PIP_NO_CACHE_DIR=1 \
+    PYTHONUNBUFFERED=1 \
+    YOLO_CONFIG_DIR=/tmp/ultralytics
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
+ && rm -rf /var/lib/apt/lists/* \
+ && useradd --create-home --uid 1000 trainer \
+ && mkdir -p /app/artifacts /app/runs /output \
+ && chown -R trainer /app /output
+
+WORKDIR /app
+COPY requirements-experiment.txt ./
+RUN pip install --index-url "${TORCH_INDEX}" torch==2.14.0 torchvision==0.29.0 \
+ && pip install -r requirements-experiment.txt
+
+COPY --chown=trainer performance_study.py prepare_grouped_split.py ./
+COPY --chown=trainer docker/train_entrypoint.sh ./
+
+USER trainer
+ENTRYPOINT ["./train_entrypoint.sh"]
