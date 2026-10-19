@@ -127,6 +127,18 @@ class TrainingContractTests(unittest.TestCase):
                 self.train(init=self.init, degrade=value)
         self.assertEqual(self.calls, [])
 
+    def test_competing_fresh_run_cannot_reuse_another_process_metadata(self):
+        model_class = sys.modules['ultralytics'].YOLO
+        def competing_claim(path):
+            self.run.mkdir(parents=True)
+            (self.run / 'named-training.json').write_text('{"owner":"other process"}')
+            return model_class(path)
+        with patch.object(sys.modules['ultralytics'], 'YOLO', side_effect=competing_claim):
+            with self.assertRaises(FileExistsError):
+                self.train(init=self.init)
+        self.assertEqual(self.calls, [])
+        self.assertEqual(json.loads((self.run / 'named-training.json').read_text()), {'owner': 'other process'})
+
     def test_fresh_named_run_cannot_silently_redirect_or_overwrite(self):
         self.train(init=self.init)
         with self.assertRaises(ValueError):

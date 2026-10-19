@@ -203,7 +203,8 @@ def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=F
     else:
         model = YOLO(str(fresh_init))
     run.mkdir(parents=True, exist_ok=True)
-    if not state_path.exists():
+    if not resume:
+        # Exclusively claim a fresh run even if another process passed preflight.
         # Save non-Ultralytics settings before training, including interrupted runs.
         with state_path.open('x') as handle:
             handle.write(json.dumps(state, indent=2) + '\n')
