@@ -65,6 +65,8 @@ if (await page.locator('#players tbody tr').count()) {
   await page.locator('#clearSel').click({ force: true });
   await page.uncheck('#tLabels');
 }
+// The viewer ignores shortcuts while a form control has focus.
+await page.evaluate(() => document.activeElement && document.activeElement.blur());
 await page.keyboard.press(']');
 await page.waitForTimeout(3200);
 await page.keyboard.press(']');

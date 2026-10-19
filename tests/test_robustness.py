@@ -10,6 +10,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import robustness_check as rc  # noqa: E402
 
 
+class HashTests(unittest.TestCase):
+    def test_sha256_matches_hashlib(self):
+        import hashlib
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "w.pt"
+            path.write_bytes(b"abc" * 1000)
+            self.assertEqual(rc.sha256(path), hashlib.sha256(b"abc" * 1000).hexdigest())
+
+
 class CorruptionTests(unittest.TestCase):
     def setUp(self):
         rng = np.random.default_rng(1)

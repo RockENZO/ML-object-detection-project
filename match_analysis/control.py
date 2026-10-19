@@ -95,7 +95,8 @@ def track_teams(source, min_samples=5, agreement=0.8):
 
     Team colours are learned online, so a player can be unassigned for some frames even
     though the same track is clearly one team elsewhere. A track needs `min_samples`
-    assigned observations with `agreement` of them on one team.
+    assigned observations with `agreement` of them on one team. Predicted rows copy the last team
+    for up to a second, so only observed rows count as votes.
     """
     votes = defaultdict(Counter)
     for shot_file in sorted((Path(source) / "shots").glob("*.jsonl")):
@@ -103,7 +104,11 @@ def track_teams(source, min_samples=5, agreement=0.8):
             for line in lines:
                 frame = json.loads(line)
                 for person in frame["people"]:
-                    if person["role"] == "player" and person.get("team") in ("A", "B"):
+                    if (
+                        person["role"] == "player"
+                        and person["observation"] == "observed"
+                        and person.get("team") in ("A", "B")
+                    ):
                         votes[(frame["shot"], person["id"])][person["team"]] += 1
     teams = {}
     for key, counter in votes.items():

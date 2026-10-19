@@ -11,6 +11,7 @@ on other leagues, cameras or lighting.
 """
 
 import argparse
+import hashlib
 import json
 import shutil
 import tempfile
@@ -37,6 +38,14 @@ CONDITIONS = {
         image.astype(np.float32) + rng.normal(0, 10, image.shape), 0, 255
     ).astype(np.uint8),
 }
+
+
+def sha256(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def perturbed_dataset(source, destination, condition, seed=0):
@@ -104,6 +113,8 @@ def main():
     clean = results.get("clean")
     report = {
         "weights": args.weights.name,
+        "checkpoint_sha256": sha256(args.weights),
+        "split_manifest_sha256": sha256(args.data_dir / "manifest.json"),
         "imgsz": args.imgsz,
         "split": "validation (test split untouched)",
         "conditions": results,

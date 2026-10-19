@@ -7,14 +7,14 @@ from match_analysis.config import Config
 from match_analysis.control import recompute, track_teams
 
 
-def person(identity, team, role="player"):
+def person(identity, team, role="player", observation="observed"):
     return {
         "id": identity,
         "role": role,
         "team": team,
         "xy": [0, 0],
         "bbox": [0, 0, 10, 20],
-        "observation": "observed",
+        "observation": observation,
         "confidence": 0.9,
     }
 
@@ -61,6 +61,17 @@ class TrackTeamTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             short = write_run(tmp, [None, "A", "A", None])
             self.assertEqual(track_teams(short), {})
+
+    def test_predicted_rows_are_not_votes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = write_run(tmp, ["A"] * 4)
+            shot = source / "shots" / "000000.jsonl"
+            rows = [json.loads(line) for line in shot.read_text().splitlines()]
+            for row in rows:
+                row["people"][0]["observation"] = "predicted"
+            rows.extend(rows[:2])
+            shot.write_text("".join(json.dumps(r) + "\n" for r in rows))
+            self.assertEqual(track_teams(source), {})
 
     def test_recompute_fills_unassigned_rows_only_when_asked(self):
         with tempfile.TemporaryDirectory() as tmp:

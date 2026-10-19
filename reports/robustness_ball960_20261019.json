@@ -1,5 +1,8 @@
 {
   "weights": "best.pt",
+  "checkpoint_sha256": "b5676be890faf7b864a6be31bce56f9d644ba69fedc567f27c4d6b86b6e26acf",
+  "split_manifest_sha256": "170d283fb4e2f2d4f6d14ea14f68df629ac5d4ba1310c5ebdca0786cc8e53756",
+  "hashes_note": "hashes added after the run, from the files the run used",
   "imgsz": 960,
   "split": "validation (test split untouched)",
   "conditions": {

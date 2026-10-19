@@ -90,29 +90,30 @@
       "team_labels_propagated": null
     },
     "same, team labels propagated along tracks": {
-      "run": "match-robust-teams",
+      "run": "match-robust-teams2",
       "model_sha256": "5c5674f7775f",
       "ball_confidence": 0.3,
       "ball_acquire_confidence": 0.5,
       "observed_possession_percent": {
-        "A": 71.3,
-        "B": 28.7
+        "A": 26.2,
+        "B": 73.8
       },
-      "possession_coverage": 0.291,
+      "possession_coverage": 0.113,
       "reason_seconds": {
         "ball_outside_control_radius": 11.3,
-        "awaiting_team_persistence": 5.4,
-        "stable_observed_team_control": 8.6,
+        "awaiting_team_persistence": 4.9,
+        "stable_observed_team_control": 3.4,
         "airborne_ball_uncertainty": 0.6,
+        "nearest_player_team_unknown": 6.3,
         "missing_observed_ball": 2.8,
         "excluded_interval": 0.3,
-        "nearest_player_team_unknown": 0.5,
         "contested_between_teams": 0.4
       },
       "team_labels_propagated": {
         "enabled": true,
-        "player_rows_relabelled": 1171
-      }
+        "player_rows_relabelled": 1060
+      },
+      "note": "Only observed rows vote for a track team (predicted rows copy the last team for up to a second). An earlier version counted predicted rows and reported 0.291, which overstated the colour evidence."
     }
   }
 }

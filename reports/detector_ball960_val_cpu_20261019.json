@@ -4,7 +4,7 @@
   "options": {
     "imgsz": 960,
     "device": "cpu",
-    "note": "validation re-run on CPU in the cloud environment; split reproduced from the grouped manifest"
+    "note": "validation re-run on CPU in the cloud environment; split reproduced from the grouped manifest; per-class image counts omitted because the evaluator reported 0"
   },
   "validation": {
     "map50": 0.8640839954284315,
@@ -14,7 +14,6 @@
     "per_class": [
       {
         "Class": "ball",
-        "Images": 0,
         "Instances": 112,
         "Box-P": 1.0,
         "Box-R": 0.4340124425994423,
@@ -23,7 +22,6 @@
       },
       {
         "Class": "goalkeeper",
-        "Images": 0,
         "Instances": 95,
         "Box-P": 0.8917503116529136,
         "Box-R": 0.953886804448149,
@@ -32,7 +30,6 @@
       },
       {
         "Class": "player",
-        "Images": 0,
         "Instances": 2437,
         "Box-P": 0.9530849661964987,
         "Box-R": 0.9831760361099713,
@@ -41,7 +38,6 @@
       },
       {
         "Class": "referee",
-        "Images": 0,
         "Instances": 295,
         "Box-P": 0.8668071347252139,
         "Box-R": 0.9016949152542373,
