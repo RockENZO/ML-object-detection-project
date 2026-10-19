@@ -8,6 +8,16 @@ set -euo pipefail
 cd /app
 
 : "${EPOCHS:=100}" "${IMGSZ:=640}" "${DEVICE:=cpu}" "${NAME:=container-run}"
+case "$NAME" in
+  .|..|*/*|*\\*) echo "NAME must be a single directory name" >&2; exit 2 ;;
+esac
+# Fail before loading data/training if the host export mount is not writable.
+out="/output/$NAME"
+if ! mkdir -p "$out" || ! probe=$(mktemp "$out/.write-check.XXXXXX"); then
+  echo "Export directory must be writable by container UID $(id -u): $out" >&2
+  exit 1
+fi
+rm "$probe"
 
 if [ ! -f artifacts/performance-study/manifest.json ]; then
   python prepare_grouped_split.py
@@ -15,20 +25,13 @@ if [ ! -f artifacts/performance-study/manifest.json ]; then
 fi
 
 args=(train --variant improved --epochs "$EPOCHS" --imgsz "$IMGSZ" --device "$DEVICE" --name "$NAME")
+[ -n "${BATCH:-}" ] && args+=(--batch "$BATCH")
+[ -n "${HYP:-}" ] && args+=(--hyp "$HYP")
+[ -n "${DEGRADE:-}" ] && args+=(--degrade "$DEGRADE")
 [ -n "${INIT:-}" ] && args+=(--init "$INIT")
 [ -n "${RESUME:-}" ] && args+=(--resume)
 python performance_study.py "${args[@]}"
 
-# Hand the result to the host: weights without optimiser state, plus the metrics.
-out="/output/$NAME"
-mkdir -p "$out"
-python - "$out" "runs/performance-study/$NAME" <<'PY'
-import shutil, sys
-from pathlib import Path
-from ultralytics.utils.torch_utils import strip_optimizer
-out, run = Path(sys.argv[1]), Path(sys.argv[2])
-strip_optimizer(str(run / "weights/best.pt"), str(out / "best.pt"))
-shutil.copy(run / "results.csv", out / "results.csv")
-shutil.copy(run.parent / (run.name + "-selection.json"), out / "selection.json")
-PY
+# Hand the result to the host, with hashes of both source and stripped bytes.
+python export_training.py "$out" "runs/performance-study/$NAME"
 echo "Done. Results are in ./train-output/$NAME on the host."
