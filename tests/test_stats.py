@@ -67,6 +67,49 @@ class PlayerStatsTests(unittest.TestCase):
         self.assertIsNone(row["team"])
         self.assertEqual(row["role"], "goalkeeper")
 
+    def test_unassigned_samples_still_count_and_the_team_comes_from_the_assigned_ones(self):
+        mixed = [frame(i / HZ, [[1, 2 if i < 30 else 0, 10.0 + 2.0 * i / HZ, 20.0, 1]]) for i in range(60)]
+        row = player_stats(mixed, HZ, 6)[0]
+        self.assertEqual(row["team"], "A")
+        self.assertAlmostEqual(row["seconds"], 6.0, delta=0.3)
+        self.assertAlmostEqual(row["distance_m"], 12.0, delta=1.0)
+        never = player_stats(run(2.0, 5, kind=2), HZ, 5)
+        self.assertEqual(len(never), 1)
+        self.assertIsNone(never[0]["team"])
+        self.assertEqual(never[0]["role"], "player")
+
+    def test_a_split_team_is_not_guessed(self):
+        frames = [frame(i / HZ, [[1, 0 if i % 2 else 1, 10.0 + i / HZ, 20.0, 1]]) for i in range(40)]
+        self.assertIsNone(player_stats(frames, HZ, 4)[0]["team"])
+
+    def test_a_jump_is_cut_before_smoothing_not_spread_over_steps(self):
+        steady = [frame(i / HZ, [[1, 0, 10.0 + 1.0 * i / HZ, 20.0, 1]]) for i in range(40)]
+        jumped = [frame((40 + i) / HZ, [[1, 0, 50.0 + 1.0 * i / HZ, 20.0, 1]]) for i in range(40)]
+        row = player_stats(steady + jumped, HZ, 8)[0]
+        self.assertAlmostEqual(row["distance_m"], 8.0, delta=1.0)
+        self.assertLess(row["peak_kmh"], 6.0)
+
+    def test_smoothing_follows_the_sample_rate(self):
+        for hz in (2.0, 5.0, 30.0):
+            frames = [
+                frame(i / hz, [[1, 0, 10.0 + 5.0 * i / hz, 20.0, 1]]) for i in range(int(8 * hz))
+            ]
+            row = player_stats(frames, hz, 8)[0]
+            self.assertAlmostEqual(row["avg_kmh"], 18.0, delta=1.5, msg=str(hz))
+            self.assertAlmostEqual(row["distance_m"], 40.0, delta=3.0, msg=str(hz))
+
+    def test_peak_is_unavailable_rather_than_zero_without_a_full_window(self):
+        frames = []
+        for burst in range(5):
+            start = burst * 1.0
+            frames += [
+                frame(start + i / HZ, [[1, 0, 10.0 + 3.0 * (start + i / HZ), 20.0, 1]]) for i in range(6)
+            ]
+        row = player_stats(frames, HZ, 6)[0]
+        self.assertIsNone(row["peak_kmh"])
+        self.assertGreater(row["distance_m"], 5)
+        self.assertGreater(row["avg_kmh"], 5)
+
     def test_output_is_json_serialisable(self):
         json.dumps(player_stats(run(3.0, 5), HZ, 5), allow_nan=False)
 
@@ -96,6 +139,17 @@ class SpaceControlTests(unittest.TestCase):
         for f in none:
             f["h"] = None
         self.assertEqual(space_control(none, PITCH, self.size, 2)["supported_fraction"], 0.0)
+
+    def test_coverage_and_the_mean_are_weighted_by_supported_sample_time(self):
+        # One qualifying frame per second at 10 Hz is a tenth of the time, not all of it.
+        sparse = [f for i, f in enumerate(self.frames(30.0, 70.0)) if i % 10 == 0]
+        for index, f in enumerate(sparse):
+            f["t"] = float(index)
+        result = space_control(sparse, PITCH, self.size, 2)
+        self.assertAlmostEqual(result["supported_fraction"], 0.1, places=2)
+        self.assertAlmostEqual(result["series"][0]["support"], 0.1, places=2)
+        full = space_control(self.frames(30.0, 70.0), PITCH, self.size, 2)
+        self.assertEqual(full["series"][0]["support"], 1.0)
 
     def test_only_the_camera_visible_area_counts(self):
         # Identity homography: the image is 105 x 68 pixels, so the whole pitch is visible.
@@ -136,6 +190,14 @@ class ModelCardTests(unittest.TestCase):
         self.assertEqual(card["map50"], 0.864)
         self.assertEqual(card["classes"][0]["recall"], 0.432)
         self.assertIn("validation", card["split"])
+
+    def test_adapted_ball_runs_do_not_claim_the_detectors_ball_figures(self):
+        data = self.report()
+        data["validation"]["per_class"].append(
+            {"Class": "player", "Instances": 9, "Box-P": 0.9, "Box-R": 0.9, "mAP50": 0.9}
+        )
+        card = model_card(self.write(data), "ab" * 32, ball_from_other_model=True)
+        self.assertEqual([c["name"] for c in card["classes"]], ["player"])
 
     def test_card_for_another_checkpoint_is_refused(self):
         with self.assertRaises(ValueError):

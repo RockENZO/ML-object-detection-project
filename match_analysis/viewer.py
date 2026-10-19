@@ -106,7 +106,7 @@ def frame_payload(run):
     return frames
 
 
-def model_card(report, checkpoint_sha256):
+def model_card(report, checkpoint_sha256, ball_from_other_model=False):
     """Validation figures for the detector, so the page states how good the model is and how that was measured."""
     report = json.loads(Path(report).read_text())
     if report.get("checkpoint_sha256") != checkpoint_sha256:
@@ -115,6 +115,10 @@ def model_card(report, checkpoint_sha256):
         )
     validation = report["validation"]
     options = report.get("options", {})
+    # A run that takes its ball from a separate adapted checkpoint did not get its ball from this detector.
+    classes = [
+        row for row in validation["per_class"] if not (ball_from_other_model and row["Class"] == "ball")
+    ]
     return {
         "checkpoint_sha256": checkpoint_sha256,
         "image_size": options.get("imgsz"),
@@ -131,7 +135,7 @@ def model_card(report, checkpoint_sha256):
                 "recall": round(row["Box-R"], 3),
                 "map50": round(row["mAP50"], 3),
             }
-            for row in validation["per_class"]
+            for row in classes
         ],
     }
 
@@ -220,10 +224,12 @@ def export_viewer(
     duration = manifest["video_end"]
     extras = {
         "players": player_stats(frames, config.sample_hz, duration),
-        "space_control": space_control(frames, pitch, size, duration),
+        "space_control": space_control(frames, pitch, size, duration, config.sample_hz),
     }
     if model_report:
-        extras["model"] = model_card(model_report, signature["model_sha256"])
+        extras["model"] = model_card(
+            model_report, signature["model_sha256"], bool(signature.get("ball_model_sha256"))
+        )
     names = summary.get("team_names", {"A": "Team A", "B": "Team B"})
     colours = team_colours(run)
     payload = {

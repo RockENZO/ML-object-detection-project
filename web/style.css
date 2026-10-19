@@ -179,7 +179,8 @@ footer { max-width: 1480px; margin: 0 auto; padding: 8px 24px 28px; color: var(-
 
 /* players */
 .players-row { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; align-items: start; }
-.players-row[hidden], #modelCard[hidden] { display: none; }
+.players-row[hidden], #playersCard[hidden], #modelCard[hidden] { display: none; }
+.players-row.single { grid-template-columns: minmax(0, 1fr); }
 .table-wrap { max-height: 360px; overflow: auto; border-radius: 10px; border: 1px solid var(--line); }
 table.players { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
 table.players th { position: sticky; top: 0; background: var(--panel-2); text-align: right; font-weight: 600; font-size: 11px; letter-spacing: .4px; color: var(--muted); padding: 0; z-index: 1; }

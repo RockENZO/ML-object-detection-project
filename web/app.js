@@ -453,7 +453,7 @@
     if (selected != null) drawSelectedPath(ctx, g, st);
     if ($('tVelocity').checked) {
       for (const p of st.players) {
-        if (!p.o || (p.kind > 1 && p.kind !== 3)) continue;
+        if (!p.o || p.kind > 3) continue;
         const v = velocity(st.i, p.id);
         if (!v || v.speed < 1.5) continue;
         arrow(ctx, X(p.x), Y(p.y), X(p.x + v.vx), Y(p.y + v.vy), 'rgba(255,255,255,0.85)', 1.6);
@@ -491,7 +491,7 @@
         ctx.strokeStyle = '#ffd23f';
         ctx.stroke();
       }
-      if (p.kind <= 1 || p.kind === 3) {
+      if (p.kind <= 3) {
         const isSel = p.id === selected;
         if (isSel || $('tLabels').checked) {
           ctx.font = `${isSel ? 700 : 600} ${isSel ? 12 : 10}px system-ui, sans-serif`;
@@ -1055,7 +1055,9 @@
   /* ---------- summary tiles, players, detector ---------- */
 
   const pct0 = (v) => `${Math.round(v * 100)}%`;
-  const swatch = (team) => `<i class="sw" style="background:${team ? colours[team] : '#d6f04d'}"></i>`;
+  const swatch = (p) => `<i class="sw" style="background:${p.team ? colours[p.team] : p.role === 'goalkeeper' ? '#d6f04d' : '#8995a8'}"></i>`;
+  const who = (p) => (p.role === 'goalkeeper' ? 'Goalkeeper' : p.team ? esc(names[p.team]) : 'Team unclear');
+  const kmh = (v) => (v == null ? '–' : v.toFixed(1));
 
   function splitBar(a) {
     return `<span class="split"><i style="width:${a * 100}%;background:${colours.A}"></i><i style="width:${(1 - a) * 100}%;background:${colours.B}"></i></span>`;
@@ -1066,7 +1068,7 @@
     const tile = (label, value, sub, extra = '') =>
       tiles.push(`<div class="kpi"><span class="kpi-label">${label}</span><b>${value}</b>${extra}<small>${sub}</small></div>`);
     const poss = D.summary && D.summary.observed_possession_percent;
-    if (poss) {
+    if (poss && poss.A != null && poss.B != null) {
       const a = poss.A / 100;
       tile(
         'Observed possession',
@@ -1096,14 +1098,14 @@
     }
     if (playerList.length) {
       const outfield = playerList.filter((p) => p.role === 'player');
-      const fastest = outfield.slice().sort((x, y) => y.peak_kmh - x.peak_kmh)[0];
+      const fastest = outfield.filter((p) => p.peak_kmh != null).sort((x, y) => y.peak_kmh - x.peak_kmh)[0];
       const far = outfield[0];
       tile('Players tracked', String(playerList.length), `${D.coverage.mean_observed_players.toFixed(1)} outfield players seen per frame`);
       if (fastest) {
-        tile('Fastest', `${fastest.peak_kmh.toFixed(0)} <em>km/h</em>`, `${tag(fastest.id)} ${fastest.team ? esc(names[fastest.team]) : ''} &middot; 1 s average`);
+        tile('Fastest', `${fastest.peak_kmh.toFixed(0)} <em>km/h</em>`, `${tag(fastest.id)} ${who(fastest)} &middot; 1 s average`);
       }
       if (far) {
-        tile('Most ground', `${far.distance_m} <em>m</em>`, `${tag(far.id)} ${far.team ? esc(names[far.team]) : ''} &middot; ${far.seconds.toFixed(0)} s visible`);
+        tile('Most ground', `${far.distance_m} <em>m</em>`, `${tag(far.id)} ${who(far)} &middot; ${far.seconds.toFixed(0)} s visible`);
       }
     }
     $('kpis').innerHTML = tiles.join('');
@@ -1123,7 +1125,8 @@
   function visiblePlayers() {
     const team = $('playerTeam').value;
     const rows = playerList.filter((p) => (team ? p.team === team : true));
-    rows.sort((x, y) => (x[sortKey] > y[sortKey] ? 1 : x[sortKey] < y[sortKey] ? -1 : 0) * sortDir);
+    const value = (p) => (p[sortKey] == null ? -1 : p[sortKey]);
+    rows.sort((x, y) => (value(x) > value(y) ? 1 : value(x) < value(y) ? -1 : 0) * sortDir);
     return rows;
   }
 
@@ -1136,11 +1139,11 @@
     $('players').tBodies[0].innerHTML = visiblePlayers()
       .map(
         (p) => `<tr data-id="${p.id}" class="${p.id === selected ? 'sel' : ''}" tabindex="0">
-          <td>${swatch(p.team)}<b>${tag(p.id)}</b>${p.role === 'goalkeeper' ? ' <span class="gk">GK</span>' : ''}</td>
+          <td>${swatch(p)}<b>${tag(p.id)}</b>${p.role === 'goalkeeper' ? ' <span class="gk">GK</span>' : ''}</td>
           <td>${p.seconds.toFixed(0)}</td>
           <td class="bar-cell" style="--w:${(p.distance_m / maxDistance) * 100}%"><span>${p.distance_m}</span></td>
           <td>${p.avg_kmh.toFixed(1)}</td>
-          <td>${p.peak_kmh.toFixed(1)}</td>
+          <td>${kmh(p.peak_kmh)}</td>
           <td>${p.high_speed_s.toFixed(1)}</td>
           <td>${p.sprint_s.toFixed(1)}</td>
         </tr>`,
@@ -1153,6 +1156,7 @@
     playerById = new Map(playerList.map((p) => [p.id, p]));
     if (!playerList.length) return;
     $('playersRow').hidden = false;
+    $('playersCard').hidden = false;
     $('playerTeam').insertAdjacentHTML(
       'beforeend',
       ['A', 'B'].map((k) => `<option value="${k}">${esc(names[k])}</option>`).join(''),
@@ -1198,11 +1202,11 @@
     const chip = $('selectedChip');
     chip.hidden = !info;
     if (info) {
-      chip.innerHTML = `${swatch(info.team)}<b>${tag(info.id)}</b> ${info.team ? esc(names[info.team]) : 'Goalkeeper'} &middot; ${info.distance_m} m &middot; peak ${info.peak_kmh.toFixed(0)} km/h <button type="button" id="clearSel">clear</button>`;
+      chip.innerHTML = `${swatch(info)}<b>${tag(info.id)}</b> ${who(info)} &middot; ${info.distance_m} m &middot; peak ${info.peak_kmh == null ? '–' : `${info.peak_kmh.toFixed(0)} km/h`} <button type="button" id="clearSel">clear</button>`;
       $('clearSel').addEventListener('click', () => selectPlayer(selected));
     }
     $('playerDetail').innerHTML = info
-      ? `<div class="detail-head">${swatch(info.team)}<b>${tag(info.id)}</b> <span>visible ${fmt(info.first)}&ndash;${fmt(info.last)} &middot; speed per second</span></div><canvas id="spark" aria-label="Speed of the selected player over time"></canvas>`
+      ? `<div class="detail-head">${swatch(info)}<b>${tag(info.id)}</b> <span>visible ${fmt(info.first)}&ndash;${fmt(info.last)} &middot; speed per second</span></div><canvas id="spark" aria-label="Speed of the selected player over time"></canvas>`
       : '<div class="empty">Select a player to follow them on the pitch and in the video, and to see their speed over time.</div>';
   }
 
@@ -1260,6 +1264,7 @@
   function buildModel() {
     const m = D.model;
     if (!m) return;
+    $('playersRow').hidden = false;
     $('modelCard').hidden = false;
     $('modelSub').textContent = `${m.image_size ? `${m.image_size} px · ` : ''}${D.source.model_sha256.slice(0, 8)}`;
     const stat = (label, v) => `<div><b>${v.toFixed(3)}</b><span>${label}</span></div>`;
@@ -1297,7 +1302,7 @@
     let best = null;
     let dist = 3;
     for (const p of lastSt.players) {
-      if ((p.kind > 1 && p.kind !== 3) || !playerById.has(p.id)) continue;
+      if (p.kind > 3 || !playerById.has(p.id)) continue;
       const d = Math.hypot(p.x - mx, p.y - my);
       if (d < dist) {
         best = p;
@@ -1469,6 +1474,7 @@
     buildPlayers();
     buildKpis();
     buildModel();
+    $('playersRow').classList.toggle('single', $('playersCard').hidden || $('modelCard').hidden);
     buildMoments();
     bind();
     const start = Number(params.get('t'));

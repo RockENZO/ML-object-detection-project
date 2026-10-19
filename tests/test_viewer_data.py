@@ -68,9 +68,11 @@ class ViewerDataTests(unittest.TestCase):
         for player in p.get("players", []):
             self.assertIn(player["id"], ids)
             self.assertIn(player["team"], ("A", "B", None))
+            self.assertIn(player["role"], ("player", "goalkeeper"))
             self.assertGreaterEqual(player["seconds"], 2.0)
             self.assertLessEqual(player["seconds"], duration + 1)
-            self.assertLessEqual(player["peak_kmh"], 12 * 3.6)
+            if player["peak_kmh"] is not None:
+                self.assertLessEqual(player["peak_kmh"], 12 * 3.6)
             self.assertLessEqual(player["avg_kmh"], 12 * 3.6)
             self.assertGreaterEqual(player["distance_m"], 0)
             self.assertEqual(len(player["kmh_per_s"]), len(p["space_control"]["series"]))
@@ -79,6 +81,7 @@ class ViewerDataTests(unittest.TestCase):
             self.assertEqual(len(space["series"]), int(-(-duration // 1)))
             for row in space["series"]:
                 self.assertTrue(row["A"] is None or 0 <= row["A"] <= 1)
+                self.assertTrue(0 <= row["support"] <= 1)
             self.assertTrue(0 <= space["supported_fraction"] <= 1)
         model = p.get("model")
         if model:
