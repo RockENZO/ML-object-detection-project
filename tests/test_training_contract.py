@@ -171,16 +171,19 @@ class ExportContractTests(unittest.TestCase):
             (run / 'weights').mkdir(parents=True)
             source = run / 'weights/best.pt'; source.write_bytes(b'original checkpoint fixture')
             (run / 'results.csv').write_text('epoch,metric\n1,0\n')
-            (root / 'named-selection.json').write_text(json.dumps({'checkpoint_sha256': digest(source)}))
-            (root / 'named-training.json').write_text('{"fixture":true}')
+            state = root / 'named-training.json'; state.write_text('{"fixture":true}')
+            metadata_bytes = state.read_bytes()
+            (root / 'named-selection.json').write_text(json.dumps({
+                'checkpoint_sha256': digest(source), 'training_metadata_sha256': digest(state)}))
             def strip(source_path, target_path):
                 Path(target_path).write_bytes(Path(source_path).read_bytes() + b':serialized without optimizer')
+                state.write_text('{"changed during export":true}')
             report = export_training(run, output, stripper=strip)
             self.assertEqual(report['training_checkpoint_sha256'], digest(source))
             self.assertEqual(report['checkpoint_sha256'], digest(output / 'best.pt'))
             self.assertNotEqual(report['training_checkpoint_sha256'], report['checkpoint_sha256'])
             self.assertEqual(json.loads((output / 'selection.json').read_text()), report)
-            self.assertEqual((output / 'training.json').read_bytes(), (root / 'named-training.json').read_bytes())
+            self.assertEqual((output / 'training.json').read_bytes(), metadata_bytes)
 
     def test_changed_or_missing_metadata_is_rejected_before_export(self):
         with tempfile.TemporaryDirectory() as tmp:
