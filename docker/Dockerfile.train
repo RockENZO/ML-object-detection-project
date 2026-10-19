@@ -20,7 +20,7 @@ COPY requirements-experiment.txt ./
 RUN pip install --index-url "${TORCH_INDEX}" torch==2.14.0 torchvision==0.29.0 \
  && pip install -r requirements-experiment.txt
 
-COPY --chown=trainer performance_study.py prepare_grouped_split.py ./
+COPY --chown=trainer performance_study.py prepare_grouped_split.py export_training.py ./
 COPY --chown=trainer docker/train_entrypoint.sh ./
 
 USER trainer

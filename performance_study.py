@@ -2,6 +2,8 @@
 import argparse
 from collections import Counter
 import json
+import math
+import re
 from pathlib import Path
 import random
 import shutil
@@ -110,45 +112,148 @@ def degrade_augmentation(probability=0.4, seed=42):
         return labels
 
     augment.Albumentations.__call__=degraded
+    return lambda: setattr(augment.Albumentations, "__call__", original)
 
 
-def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=False, init=None, batch=8, hyp=None, degrade=0.0):
+# HYP may tune learning/augmentation, but must not redirect this runner's artifacts.
+RESERVED_TRAIN_KEYS = {
+    'data', 'project', 'name', 'save_dir', 'model', 'resume', 'pretrained', 'cfg',
+    'task', 'mode', 'exist_ok', 'split', 'workers', 'seed', 'deterministic',
+    'device', 'batch', 'epochs', 'imgsz',
+}
+
+
+def probability(value):
+    if isinstance(value, bool):
+        raise ValueError('Degradation probability must be finite and between 0 and 1')
+    value = float(value)
+    if not math.isfinite(value) or not 0 <= value <= 1:
+        raise ValueError('Degradation probability must be finite and between 0 and 1')
+    return value
+
+
+def training_state(run, name, split_hash, augmentation_hash, resume, init, degrade):
+    path = run / (name + '-training.json')
+    if resume:
+        if not path.is_file():
+            raise ValueError('Resume requires the original training metadata sidecar: ' + str(path)
+                             + '; preserve this run and start a new named run rather than guessing its settings')
+        state = json.loads(path.read_text())
+        if state.get('schema_version') != 1 or not re.fullmatch(r'[0-9a-f]{64}', state.get('initial_checkpoint_sha256', '')):
+            raise ValueError('Invalid training metadata')
+        if state.get('split_manifest_sha256') != split_hash or state.get('augmentation_sha256') != augmentation_hash:
+            raise ValueError('Resume dataset provenance differs from the original run')
+        stored_probability = probability(state['degrade_probability'])
+        if degrade is not None and probability(degrade) != stored_probability:
+            raise ValueError('Resume must preserve the original degradation probability')
+        if init is not None and digest(Path(init)) != state['initial_checkpoint_sha256']:
+            raise ValueError('Resume must preserve the original initialization hash')
+        return path, state
+    if path.exists() or (run / name).exists():
+        raise ValueError('Run already exists; use --resume or choose a new name')
+    return path, {
+        'schema_version': 1,
+        'initial_checkpoint_sha256': digest(init),
+        'split_manifest_sha256': split_hash,
+        'augmentation_sha256': augmentation_hash,
+        'degrade_probability': probability(0.0 if degrade is None else degrade),
+        'augmentation_seed': 42,
+    }
+
+
+def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=False, init=None, batch=8, hyp=None, degrade=None):
+    output, run = Path(output).resolve(), Path(run).resolve()
+    name = name or variant
+    if not isinstance(name, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*', name):
+        raise ValueError('Run name must be a single safe directory name')
+    if hyp is not None and (not isinstance(hyp, dict) or not all(isinstance(k, str) for k in hyp)):
+        raise ValueError('HYP must be a JSON object of training hyperparameters')
+    reserved = RESERVED_TRAIN_KEYS.intersection(hyp or {})
+    if reserved:
+        raise ValueError('HYP cannot override runner keys: ' + ', '.join(sorted(reserved)))
+    if degrade is not None:
+        degrade = probability(degrade)
+    init = Path(init) if init is not None else None
+    fresh_init = init or ROOT / 'models/yolov8s.pt'
+    split_hash = digest(output / 'manifest.json')
+    augmentation_hash = digest(output / 'augmentation.json') if variant == 'improved' else None
+    state_path, state = training_state(run, name, split_hash, augmentation_hash, resume,
+                                       init if resume else fresh_init, degrade)
     import platform
     import torch
     import ultralytics
     from ultralytics import YOLO
-    name=name or variant
-    if degrade:
-        degrade_augmentation(degrade)
-    init=Path(init) if init else ROOT/'models/yolov8s.pt'
-    options=dict(data=str((output/(variant+'.yaml')).resolve()),epochs=epochs,imgsz=imgsz,batch=batch,
-                 seed=42,deterministic=True,device=device,workers=0,patience=20,
-                 project=str(run.resolve()),name=name,exist_ok=resume,plots=True)
-    options.update(hyp or {})  # extra Ultralytics hyperparameters, recorded in the selection report
-    start=time.monotonic()
+    options = dict(data=str(output / (variant + '.yaml')), epochs=epochs, imgsz=imgsz, batch=batch,
+                   seed=42, deterministic=True, device=device, workers=0, patience=20,
+                   project=str(run), name=name, exist_ok=False, plots=True)
+    options.update(hyp or {})
+    resumed_hash = None
+    checkpoint_resume = False
+    restarted_unstarted = False
     if resume:
-        # Continue an interrupted run from its own last.pt; optimiser, schedule and epoch counter are restored.
-        # The checkpoint's own arguments win, so validation and the report describe what was actually trained.
         from ultralytics.nn.tasks import torch_safe_load
-        last=run/name/'weights/last.pt'
-        saved=torch_safe_load(str(last))[0]['train_args']
-        for key in ('data','epochs','imgsz','batch','seed','deterministic','device','patience'):
-            options[key]=saved[key]
-        imgsz,device=options['imgsz'],options['device']
-        YOLO(str(last)).train(resume=True)
+        last = run / name / 'weights/last.pt'
+        if last.is_file():
+            resumed_hash = digest(last)
+            saved = dict(torch_safe_load(str(last))[0]['train_args'])
+            checkpoint_resume = True
+        else:
+            if (run / name / 'weights/best.pt').exists():
+                raise ValueError('Cannot restart a run with best.pt but no resumable last.pt')
+            if 'train_options' not in state:
+                raise ValueError('Pre-checkpoint retry requires originally recorded train options')
+            saved = dict(state['train_options'])
+            restart_init = init or Path(state['initial_checkpoint_path'])
+            if digest(restart_init) != state['initial_checkpoint_sha256']:
+                raise ValueError('Pre-checkpoint retry must use the original initialization bytes')
+            restarted_unstarted = True
+        if (Path(saved['project']).resolve() != run or saved['name'] != name
+                or Path(saved['data']).resolve() != output / (variant + '.yaml')):
+            raise ValueError('Checkpoint paths do not match this run and dataset; do not redirect a resumed run')
+        if any(key not in saved or saved[key] != value for key, value in (hyp or {}).items()):
+            raise ValueError('Resume HYP differs from the checkpoint settings')
+        options = {**saved, **({'resume': True} if checkpoint_resume else {'exist_ok': True})}
+        model = YOLO(str(last if checkpoint_resume else restart_init))
     else:
-        YOLO(str(init)).train(**options)
-    checkpoint=run/name/'weights/best.pt'
-    # validation only; final test evaluation is a separate explicit operation.
-    selected=YOLO(str(checkpoint));metrics=selected.val(data=options['data'],split='val',imgsz=imgsz,device=device,batch=4,project=str(run.resolve()),name=name+'-validation',plots=True)
-    report={'variant':variant,'checkpoint_sha256':digest(checkpoint),'initial_checkpoint_sha256':digest(init),
-            'split_manifest_sha256':digest(output/'manifest.json'),'augmentation_sha256':digest(output/'augmentation.json') if variant=='improved' else None,
-            'options':{**{k:v for k,v in options.items() if k not in ['data','project']},**({'degrade_probability':degrade} if degrade else {})},'data_role':variant+'.yaml',
-            'validation':{'map50':float(metrics.box.map50),'map50_95':float(metrics.box.map),'precision':float(metrics.box.mp),'recall':float(metrics.box.mr),'per_class':metrics.summary()},
-            'runtime':{'python':platform.python_version(),'torch':torch.__version__,'ultralytics':ultralytics.__version__},'elapsed_seconds':time.monotonic()-start,
-            'determinism':'MPS includes nondeterministic operators; exact repeats are not guaranteed.'}
-    (run/(name+'-selection.json')).write_text(json.dumps(report,indent=2,default=lambda x:x.item())+'\n')
-    print(json.dumps(report['validation'],default=lambda x:x.item()),flush=True)
+        model = YOLO(str(fresh_init))
+    run.mkdir(parents=True, exist_ok=True)
+    if not resume:
+        state['initial_checkpoint_path'] = str(fresh_init.resolve())
+        state['train_options'] = dict(options)
+        # Exclusively claim a fresh run even if another process passed preflight.
+        # Save non-Ultralytics settings before training, including interrupted runs.
+        with state_path.open('x') as handle:
+            handle.write(json.dumps(state, indent=2) + '\n')
+    restore = degrade_augmentation(state['degrade_probability'], state['augmentation_seed']) if state['degrade_probability'] else lambda: None
+    start = time.monotonic()
+    try:
+        if checkpoint_resume:
+            model.train(resume=True)
+        else:
+            model.train(**options)
+    finally:
+        restore()
+    checkpoint = run / name / 'weights/best.pt'
+    selected = YOLO(str(checkpoint))
+    metrics = selected.val(data=options['data'], split='val', imgsz=options['imgsz'], device=options['device'],
+                           batch=4, project=str(run), name=name + '-validation', plots=True)
+    report = {
+        'variant': variant, 'checkpoint_sha256': digest(checkpoint),
+        'initial_checkpoint_sha256': state['initial_checkpoint_sha256'],
+        'split_manifest_sha256': split_hash, 'augmentation_sha256': augmentation_hash,
+        'options': {**{k: v for k, v in options.items() if k not in ['data', 'project']},
+                    'degrade_probability': state['degrade_probability']},
+        'data_role': variant + '.yaml', 'training_metadata_sha256': digest(state_path),
+        'resumed_from_checkpoint_sha256': resumed_hash,
+        'restarted_before_first_checkpoint': restarted_unstarted,
+        'validation': {'map50': float(metrics.box.map50), 'map50_95': float(metrics.box.map),
+                       'precision': float(metrics.box.mp), 'recall': float(metrics.box.mr), 'per_class': metrics.summary()},
+        'runtime': {'python': platform.python_version(), 'torch': torch.__version__, 'ultralytics': ultralytics.__version__},
+        'elapsed_seconds': time.monotonic() - start,
+        'determinism': 'MPS includes nondeterministic operators; exact repeats are not guaranteed. External degradation RNG restarts from its recorded seed on resume.',
+    }
+    (run / (name + '-selection.json')).write_text(json.dumps(report, indent=2, default=lambda x: x.item()) + '\n')
+    print(json.dumps(report['validation'], default=lambda x: x.item()), flush=True)
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
@@ -164,7 +269,7 @@ if __name__=='__main__':
     parser.add_argument('--init',type=Path,help='start from this checkpoint instead of the COCO yolov8s.pt (for example to fine-tune a finished run at a larger --imgsz)')
     parser.add_argument('--batch',type=int,default=8,help='training batch size; lower it for larger --imgsz')
     parser.add_argument('--hyp',type=json.loads,help='JSON object of extra Ultralytics train arguments, e.g. \'{"lr0":0.002,"cos_lr":true}\'')
-    parser.add_argument('--degrade',type=float,default=0.0,help='probability of random blur / noise / JPEG on each training image (0 disables)')
+    parser.add_argument('--degrade',type=probability,default=None,help='probability of random blur / noise / JPEG on each training image (0 disables)')
     parser.add_argument('--resume',action='store_true',help='continue the interrupted run called --name from its last.pt, with the settings stored in that checkpoint')
     args=parser.parse_args()
     if args.command=='prepare':

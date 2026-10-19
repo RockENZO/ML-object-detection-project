@@ -1,5 +1,6 @@
 # Detector training in a container, so nothing is installed on the host and
 # `docker compose -f docker-compose.train.yml down --volumes --rmi all` removes it all.
+# First create train-input/train-output; export must be writable by container UID 1000.
 #   CPU (any machine):  docker compose -f docker-compose.train.yml run --rm train
 #   NVIDIA GPU:         TORCH_INDEX=https://download.pytorch.org/whl/cu128 DEVICE=0 \
 #                       docker compose -f docker-compose.train.yml --profile gpu run --rm train-gpu
@@ -18,6 +19,9 @@ services:
       NAME: ${NAME:-container-run}
       INIT: ${INIT:-}
       RESUME: ${RESUME:-}
+      BATCH: ${BATCH:-8}
+      HYP: ${HYP:-}
+      DEGRADE: ${DEGRADE:-}
     shm_size: 2gb
     volumes:
       - ./training:/app/training:ro
@@ -25,7 +29,11 @@ services:
       - ./train-input:/input:ro
       - train-artifacts:/app/artifacts
       - train-runs:/app/runs
-      - ./train-output:/output
+      - type: bind
+        source: ./train-output
+        target: /output
+        bind:
+          create_host_path: false
 
   train-gpu:
     extends:

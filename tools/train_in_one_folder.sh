@@ -17,9 +17,16 @@ export MPLCONFIGDIR="$WORK/matplotlib" PYTORCH_ENABLE_MPS_FALLBACK=1
 
 if [ ! -x "$WORK/venv/bin/python" ]; then
   python3 -m venv "$WORK/venv"
-  "$WORK/venv/bin/pip" install -r requirements-experiment.txt
 fi
 PY="$WORK/venv/bin/python"
+# An interrupted install is not a reusable environment. Mark only success,
+# and retry when the pinned requirements change or installation was incomplete.
+installed="$WORK/requirements-installed.txt"
+if ! cmp -s requirements-experiment.txt "$installed"; then
+  rm -f "$installed"
+  "$PY" -m pip install -r requirements-experiment.txt
+  cp requirements-experiment.txt "$installed"
+fi
 
 if [ ! -f "$WORK/artifacts/performance-study/manifest.json" ]; then
   "$PY" prepare_grouped_split.py --output-dir "$WORK/artifacts/grouped"
