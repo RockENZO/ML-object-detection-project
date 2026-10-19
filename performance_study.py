@@ -9,10 +9,11 @@ import time
 from prepare_grouped_split import DATA, ROOT, NAMES, collect, digest
 
 
-def prepare(output):
+def prepare(output, grouped=None):
     if output.exists():
         raise ValueError('Study output already exists')
-    previous=json.loads((ROOT/'artifacts/grouped/manifest.json').read_text())
+    grouped=Path(grouped) if grouped else ROOT/'artifacts/grouped'
+    previous=json.loads((grouped/'manifest.json').read_text())
     candidates=sorted(g for g,s in previous['groups'].items() if s=='train')
     random.Random(20260930).shuffle(candidates)
     final=set(candidates[:2])
@@ -26,7 +27,7 @@ def prepare(output):
             target=output/record['split']/kind/Path(record[key]).name
             target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(DATA/record[key],target)
     manifest={'protocol':'new final holdout from former training groups; prior tested groups quarantined',
-              'seed':20260930,'previous_manifest_sha256':digest(ROOT/'artifacts/grouped/manifest.json'),
+              'seed':20260930,'previous_manifest_sha256':digest(grouped/'manifest.json'),
               'names':NAMES,'records':records,'counts':dict(Counter(r['split'] for r in records)),
               'final_groups':sorted(final),'groups':{g:next(r['split'] for r in records if r['group']==g) for g in previous['groups']},
               'selection':'Use validation only; train fresh from COCO, never former trained weights',
@@ -70,12 +71,13 @@ def augment(output):
     return len(crop_manifest)
 
 
-def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=False):
+def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=False, init=None):
     import platform
     import torch
     import ultralytics
     from ultralytics import YOLO
     name=name or variant
+    init=Path(init) if init else ROOT/'models/yolov8s.pt'
     options=dict(data=str((output/(variant+'.yaml')).resolve()),epochs=epochs,imgsz=imgsz,batch=8,
                  seed=42,deterministic=True,device=device,workers=0,patience=20,
                  project=str(run.resolve()),name=name,exist_ok=resume,plots=True)
@@ -91,11 +93,11 @@ def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=F
         imgsz,device=options['imgsz'],options['device']
         YOLO(str(last)).train(resume=True)
     else:
-        YOLO(str(ROOT/'models/yolov8s.pt')).train(**options)
+        YOLO(str(init)).train(**options)
     checkpoint=run/name/'weights/best.pt'
     # validation only; final test evaluation is a separate explicit operation.
     selected=YOLO(str(checkpoint));metrics=selected.val(data=options['data'],split='val',imgsz=imgsz,device=device,batch=4,project=str(run.resolve()),name=name+'-validation',plots=True)
-    report={'variant':variant,'checkpoint_sha256':digest(checkpoint),'initial_checkpoint_sha256':digest(ROOT/'models/yolov8s.pt'),
+    report={'variant':variant,'checkpoint_sha256':digest(checkpoint),'initial_checkpoint_sha256':digest(init),
             'split_manifest_sha256':digest(output/'manifest.json'),'augmentation_sha256':digest(output/'augmentation.json') if variant=='improved' else None,
             'options':{k:v for k,v in options.items() if k not in ['data','project']},'data_role':variant+'.yaml',
             'validation':{'map50':float(metrics.box.map50),'map50_95':float(metrics.box.map),'precision':float(metrics.box.mp),'recall':float(metrics.box.mr),'per_class':metrics.summary()},
@@ -108,14 +110,16 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command',choices=['prepare','train'])
     parser.add_argument('--output',type=Path,default=ROOT/'artifacts/performance-study')
+    parser.add_argument('--grouped',type=Path,help='grouped-split directory written by prepare_grouped_split.py (default: artifacts/grouped)')
     parser.add_argument('--run',type=Path,default=ROOT/'runs/performance-study')
     parser.add_argument('--variant',choices=['base','improved'],default='improved')
     parser.add_argument('--epochs',type=int,default=80)
     parser.add_argument('--imgsz',type=int,default=640)
     parser.add_argument('--device',default='mps',help='mps, cpu, or CUDA device index')
     parser.add_argument('--name',help='run name under --run (default: the variant); use a new name for each experiment. finalize_study.py only reads the canonical base/improved names, so name runs you mean to finalize accordingly')
+    parser.add_argument('--init',type=Path,help='start from this checkpoint instead of the COCO yolov8s.pt (for example to fine-tune a finished run at a larger --imgsz)')
     parser.add_argument('--resume',action='store_true',help='continue the interrupted run called --name from its last.pt, with the settings stored in that checkpoint')
     args=parser.parse_args()
     if args.command=='prepare':
-        m=prepare(args.output);n=augment(args.output);print(json.dumps({'counts':m['counts'],'final_groups':m['final_groups'],'ball_crops':n}))
-    else:train(args.output,args.run,args.variant,args.epochs,args.imgsz,args.device,args.name,args.resume)
+        m=prepare(args.output,args.grouped);n=augment(args.output);print(json.dumps({'counts':m['counts'],'final_groups':m['final_groups'],'ball_crops':n}))
+    else:train(args.output,args.run,args.variant,args.epochs,args.imgsz,args.device,args.name,args.resume,args.init)

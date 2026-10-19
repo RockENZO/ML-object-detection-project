@@ -4,3 +4,7 @@ __pycache__/
 runs/
 artifacts/
 .DS_Store
+# Training hand-off folders (see docs/TRAINING.md)
+train-input/
+train-output/
+train-workspace/

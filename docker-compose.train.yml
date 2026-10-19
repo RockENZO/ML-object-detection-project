@@ -1,0 +1,44 @@
+# Detector training in a container, so nothing is installed on the host and
+# `docker compose -f docker-compose.train.yml down --volumes --rmi all` removes it all.
+#   CPU (any machine):  docker compose -f docker-compose.train.yml run --rm train
+#   NVIDIA GPU:         TORCH_INDEX=https://download.pytorch.org/whl/cu128 DEVICE=0 \
+#                       docker compose -f docker-compose.train.yml --profile gpu run --rm train-gpu
+# See docs/TRAINING.md for settings and the Apple GPU (MPS) alternative.
+services:
+  train:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.train
+      args:
+        TORCH_INDEX: ${TORCH_INDEX:-https://download.pytorch.org/whl/cpu}
+    environment:
+      EPOCHS: ${EPOCHS:-100}
+      IMGSZ: ${IMGSZ:-640}
+      DEVICE: ${DEVICE:-cpu}
+      NAME: ${NAME:-container-run}
+      INIT: ${INIT:-}
+      RESUME: ${RESUME:-}
+    shm_size: 2gb
+    volumes:
+      - ./training:/app/training:ro
+      - ./models:/app/models:ro
+      - ./train-input:/input:ro
+      - train-artifacts:/app/artifacts
+      - train-runs:/app/runs
+      - ./train-output:/output
+
+  train-gpu:
+    extends:
+      service: train
+    profiles: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  train-artifacts:
+  train-runs:

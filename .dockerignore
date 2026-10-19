@@ -1,0 +1,15 @@
+.git
+runs/
+artifacts/
+train-input/
+train-output/
+train-workspace/
+input_videos/
+web/
+docs/
+reports/
+notebooks/
+training/
+models/
+__pycache__/
+*.pyc
