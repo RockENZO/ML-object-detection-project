@@ -224,7 +224,9 @@ if sys.argv[1:3] == ['-m', 'pip'] and os.environ.get('FAIL_ONCE'):
         for key in ['BATCH', 'HYP', 'DEGRADE']:
             self.assertEqual(service['environment'][key], env[key])
         export = next(v for v in service['volumes'] if v['target'] == '/output')
-        self.assertFalse(export['bind']['create_host_path'])
+        # Compose releases may omit false-valued fields from normalized JSON.
+        self.assertFalse(export.get('bind', {}).get('create_host_path', False))
+        self.assertIn('create_host_path: false', (ROOT / 'docker-compose.train.yml').read_text())
 
 
 if __name__ == '__main__':
