@@ -12,6 +12,7 @@ import cv2
 from .config import Config
 from .hashing import digest
 from .insights import build
+from .stats import player_stats, space_control
 from .summary import load_frames
 
 SCHEMA_VERSION = 1
@@ -105,6 +106,36 @@ def frame_payload(run):
     return frames
 
 
+def model_card(report, checkpoint_sha256):
+    """Validation figures for the detector, so the page states how good the model is and how that was measured."""
+    report = json.loads(Path(report).read_text())
+    if report.get("checkpoint_sha256") != checkpoint_sha256:
+        raise ValueError(
+            "Model report describes a different checkpoint than the one this run analysed"
+        )
+    validation = report["validation"]
+    options = report.get("options", {})
+    return {
+        "checkpoint_sha256": checkpoint_sha256,
+        "image_size": options.get("imgsz"),
+        "split": "validation (used to choose the model; the test split is not used here)",
+        "map50": round(validation["map50"], 3),
+        "map50_95": round(validation["map50_95"], 3),
+        "precision": round(validation["precision"], 3),
+        "recall": round(validation["recall"], 3),
+        "classes": [
+            {
+                "name": row["Class"],
+                "instances": row["Instances"],
+                "precision": round(row["Box-P"], 3),
+                "recall": round(row["Box-R"], 3),
+                "map50": round(row["mAP50"], 3),
+            }
+            for row in validation["per_class"]
+        ],
+    }
+
+
 def transcode(video, output, max_height=720, duration=None):
     """Browser-friendly copies without audio, keeping original timestamps.
 
@@ -140,7 +171,9 @@ def transcode(video, output, max_height=720, duration=None):
     ]
 
 
-def export_viewer(run, output, video=None, transcode_video=True, max_height=720):
+def export_viewer(
+    run, output, video=None, transcode_video=True, max_height=720, model_report=None
+):
     run, output = Path(run).resolve(), Path(output).resolve()
     manifest = json.loads((run / "manifest.json").read_text())
     signature = manifest["signature"]
@@ -182,6 +215,15 @@ def export_viewer(run, output, video=None, transcode_video=True, max_height=720)
             )
         shutil.copyfile(source_video, output / video_name)
         videos = [{"src": video_name, "type": "video/mp4"}]
+    frames = frame_payload(run)
+    pitch = {"length": config.pitch_length, "width": config.pitch_width}
+    duration = manifest["video_end"]
+    extras = {
+        "players": player_stats(frames, config.sample_hz, duration),
+        "space_control": space_control(frames, pitch, size, duration),
+    }
+    if model_report:
+        extras["model"] = model_card(model_report, signature["model_sha256"])
     names = summary.get("team_names", {"A": "Team A", "B": "Team B"})
     colours = team_colours(run)
     payload = {
@@ -200,7 +242,7 @@ def export_viewer(run, output, video=None, transcode_video=True, max_height=720)
                 "processed_samples_per_compute_second"
             ),
         },
-        "pitch": {"length": config.pitch_length, "width": config.pitch_width},
+        "pitch": pitch,
         "teams": {
             team: {"name": names[team], "colour": colours[team]} for team in "AB"
         },
@@ -216,7 +258,8 @@ def export_viewer(run, output, video=None, transcode_video=True, max_height=720)
         },
         "limitations": LIMITATIONS,
         **insights,
-        "frames": frame_payload(run),
+        **extras,
+        "frames": frames,
     }
     target = output / "analysis.json"
     target.write_text(json.dumps(payload, separators=(",", ":"), allow_nan=False))

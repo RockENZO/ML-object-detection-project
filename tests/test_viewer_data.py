@@ -61,6 +61,31 @@ class ViewerDataTests(unittest.TestCase):
             if frame["h"] is not None:
                 self.assertEqual(len(frame["h"]), 9)
 
+    def test_player_stats_and_space_control_are_consistent(self):
+        p = self.payload
+        duration = p["source"]["duration"]
+        ids = {row[0] for frame in p["frames"] for row in frame["p"]}
+        for player in p.get("players", []):
+            self.assertIn(player["id"], ids)
+            self.assertIn(player["team"], ("A", "B", None))
+            self.assertGreaterEqual(player["seconds"], 2.0)
+            self.assertLessEqual(player["seconds"], duration + 1)
+            self.assertLessEqual(player["peak_kmh"], 12 * 3.6)
+            self.assertLessEqual(player["avg_kmh"], 12 * 3.6)
+            self.assertGreaterEqual(player["distance_m"], 0)
+            self.assertEqual(len(player["kmh_per_s"]), len(p["space_control"]["series"]))
+        space = p.get("space_control")
+        if space:
+            self.assertEqual(len(space["series"]), int(-(-duration // 1)))
+            for row in space["series"]:
+                self.assertTrue(row["A"] is None or 0 <= row["A"] <= 1)
+            self.assertTrue(0 <= space["supported_fraction"] <= 1)
+        model = p.get("model")
+        if model:
+            self.assertEqual(model["checkpoint_sha256"], p["source"]["model_sha256"])
+            for row in model["classes"]:
+                self.assertTrue(0 <= row["recall"] <= 1)
+
     def test_momentum_series_is_bounded_and_contiguous(self):
         series = self.payload["momentum"]
         step = self.payload["bin_seconds"]
