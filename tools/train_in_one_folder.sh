@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-: "${EPOCHS:=100}" "${IMGSZ:=640}" "${DEVICE:=mps}" "${NAME:=mac-run}"
+: "${EPOCHS:=100}" "${IMGSZ:=640}" "${DEVICE:=mps}" "${NAME:=mac-run}" "${BATCH:=8}"
 WORK="${WORK:-$PWD/train-workspace}"
 mkdir -p "$WORK"
 export PIP_CACHE_DIR="$WORK/pip-cache" YOLO_CONFIG_DIR="$WORK/ultralytics" TORCH_HOME="$WORK/torch"
@@ -25,7 +25,7 @@ if [ ! -f "$WORK/artifacts/performance-study/manifest.json" ]; then
 fi
 
 args=(train --output "$WORK/artifacts/performance-study" --run "$WORK/runs" --variant improved
-      --epochs "$EPOCHS" --imgsz "$IMGSZ" --device "$DEVICE" --name "$NAME")
+      --epochs "$EPOCHS" --imgsz "$IMGSZ" --device "$DEVICE" --name "$NAME" --batch "$BATCH")
 [ -n "${INIT:-}" ] && args+=(--init "$INIT")
 [ -n "${RESUME:-}" ] && args+=(--resume)
 "$PY" performance_study.py "${args[@]}"

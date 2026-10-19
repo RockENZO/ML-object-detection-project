@@ -16,6 +16,7 @@ services:
       IMGSZ: ${IMGSZ:-640}
       DEVICE: ${DEVICE:-cpu}
       NAME: ${NAME:-container-run}
+      BATCH: ${BATCH:-8}
       INIT: ${INIT:-}
       RESUME: ${RESUME:-}
     shm_size: 2gb

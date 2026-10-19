@@ -71,14 +71,14 @@ def augment(output):
     return len(crop_manifest)
 
 
-def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=False, init=None):
+def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=False, init=None, batch=8):
     import platform
     import torch
     import ultralytics
     from ultralytics import YOLO
     name=name or variant
     init=Path(init) if init else ROOT/'models/yolov8s.pt'
-    options=dict(data=str((output/(variant+'.yaml')).resolve()),epochs=epochs,imgsz=imgsz,batch=8,
+    options=dict(data=str((output/(variant+'.yaml')).resolve()),epochs=epochs,imgsz=imgsz,batch=batch,
                  seed=42,deterministic=True,device=device,workers=0,patience=20,
                  project=str(run.resolve()),name=name,exist_ok=resume,plots=True)
     start=time.monotonic()
@@ -118,8 +118,9 @@ if __name__=='__main__':
     parser.add_argument('--device',default='mps',help='mps, cpu, or CUDA device index')
     parser.add_argument('--name',help='run name under --run (default: the variant); use a new name for each experiment. finalize_study.py only reads the canonical base/improved names, so name runs you mean to finalize accordingly')
     parser.add_argument('--init',type=Path,help='start from this checkpoint instead of the COCO yolov8s.pt (for example to fine-tune a finished run at a larger --imgsz)')
+    parser.add_argument('--batch',type=int,default=8,help='training batch size; lower it (for example 4) if a large --imgsz runs out of memory')
     parser.add_argument('--resume',action='store_true',help='continue the interrupted run called --name from its last.pt, with the settings stored in that checkpoint')
     args=parser.parse_args()
     if args.command=='prepare':
         m=prepare(args.output,args.grouped);n=augment(args.output);print(json.dumps({'counts':m['counts'],'final_groups':m['final_groups'],'ball_crops':n}))
-    else:train(args.output,args.run,args.variant,args.epochs,args.imgsz,args.device,args.name,args.resume,args.init)
+    else:train(args.output,args.run,args.variant,args.epochs,args.imgsz,args.device,args.name,args.resume,args.init,args.batch)

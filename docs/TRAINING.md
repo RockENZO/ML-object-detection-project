@@ -21,6 +21,7 @@ Both routes read the same environment variables.
 | `EPOCHS` | 100 | Epoch budget; early stopping (patience 20) ends a run sooner when validation stops improving |
 | `IMGSZ` | 640 | Training image size; try 960 or 1280 to help the ball, which is a few pixels wide (slower, more memory) |
 | `DEVICE` | `mps` for the script, `cpu` for Docker | `0` for the first NVIDIA GPU |
+| `BATCH` | 8 | Batch size; lower it (for example 4) if a large `IMGSZ` runs out of memory |
 | `NAME` | `mac-run` / `container-run` | Run name; use a new one per experiment |
 | `INIT` | none | Checkpoint to fine-tune from instead of the COCO weights |
 | `RESUME` | none | Any value continues an interrupted run called `NAME` from its own `last.pt` |

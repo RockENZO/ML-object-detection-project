@@ -7,14 +7,14 @@
 set -euo pipefail
 cd /app
 
-: "${EPOCHS:=100}" "${IMGSZ:=640}" "${DEVICE:=cpu}" "${NAME:=container-run}"
+: "${EPOCHS:=100}" "${IMGSZ:=640}" "${DEVICE:=cpu}" "${NAME:=container-run}" "${BATCH:=8}"
 
 if [ ! -f artifacts/performance-study/manifest.json ]; then
   python prepare_grouped_split.py
   python performance_study.py prepare
 fi
 
-args=(train --variant improved --epochs "$EPOCHS" --imgsz "$IMGSZ" --device "$DEVICE" --name "$NAME")
+args=(train --variant improved --epochs "$EPOCHS" --imgsz "$IMGSZ" --device "$DEVICE" --name "$NAME" --batch "$BATCH")
 [ -n "${INIT:-}" ] && args+=(--init "$INIT")
 [ -n "${RESUME:-}" ] && args+=(--resume)
 python performance_study.py "${args[@]}"
