@@ -71,16 +71,60 @@ def augment(output):
     return len(crop_manifest)
 
 
-def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=False, init=None):
+def degrade_augmentation(probability=0.4, seed=42):
+    """Randomly blur, add noise or JPEG-compress training images (labels unchanged) to harden the detector.
+
+    Ultralytics' built-in blur transforms need albumentations and fire 1% of the time, so this wraps the same
+    pipeline step with OpenCV. It is applied after mosaic/affine, to training batches only.
+    """
+    import cv2
+    import numpy as np
+    from ultralytics.data import augment
+    rng=np.random.default_rng(seed)
+    original=augment.Albumentations.__call__
+
+    def degraded(self, labels):
+        labels=original(self, labels)
+        if rng.random()>=probability:
+            return labels
+        image=labels['img']
+        for _ in range(int(rng.integers(1, 3))):
+            kind=int(rng.integers(0, 4))
+            if kind==0:
+                image=cv2.GaussianBlur(image, (0, 0), float(rng.uniform(0.8, 2.5)))
+            elif kind==1:  # motion blur along a random direction
+                size=int(rng.integers(3, 8))*2+1
+                kernel=np.zeros((size, size), np.float32)
+                kernel[size//2, :]=1
+                matrix=cv2.getRotationMatrix2D((size/2-.5, size/2-.5), float(rng.uniform(0, 180)), 1)
+                kernel=cv2.warpAffine(kernel, matrix, (size, size))
+                image=cv2.filter2D(image, -1, kernel/max(kernel.sum(), 1e-6))
+            elif kind==2:
+                noisy=image.astype(np.float32)+rng.normal(0, float(rng.uniform(4, 14)), image.shape)
+                image=np.clip(noisy, 0, 255).astype(np.uint8)
+            else:
+                ok, encoded=cv2.imencode('.jpg', image, [cv2.IMWRITE_JPEG_QUALITY, int(rng.integers(25, 60))])
+                if ok:
+                    image=cv2.imdecode(encoded, cv2.IMREAD_COLOR)
+        labels['img']=np.ascontiguousarray(image)
+        return labels
+
+    augment.Albumentations.__call__=degraded
+
+
+def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=False, init=None, batch=8, hyp=None, degrade=0.0):
     import platform
     import torch
     import ultralytics
     from ultralytics import YOLO
     name=name or variant
+    if degrade:
+        degrade_augmentation(degrade)
     init=Path(init) if init else ROOT/'models/yolov8s.pt'
-    options=dict(data=str((output/(variant+'.yaml')).resolve()),epochs=epochs,imgsz=imgsz,batch=8,
+    options=dict(data=str((output/(variant+'.yaml')).resolve()),epochs=epochs,imgsz=imgsz,batch=batch,
                  seed=42,deterministic=True,device=device,workers=0,patience=20,
                  project=str(run.resolve()),name=name,exist_ok=resume,plots=True)
+    options.update(hyp or {})  # extra Ultralytics hyperparameters, recorded in the selection report
     start=time.monotonic()
     if resume:
         # Continue an interrupted run from its own last.pt; optimiser, schedule and epoch counter are restored.
@@ -99,7 +143,7 @@ def train(output, run, variant, epochs, imgsz, device="mps", name=None, resume=F
     selected=YOLO(str(checkpoint));metrics=selected.val(data=options['data'],split='val',imgsz=imgsz,device=device,batch=4,project=str(run.resolve()),name=name+'-validation',plots=True)
     report={'variant':variant,'checkpoint_sha256':digest(checkpoint),'initial_checkpoint_sha256':digest(init),
             'split_manifest_sha256':digest(output/'manifest.json'),'augmentation_sha256':digest(output/'augmentation.json') if variant=='improved' else None,
-            'options':{k:v for k,v in options.items() if k not in ['data','project']},'data_role':variant+'.yaml',
+            'options':{**{k:v for k,v in options.items() if k not in ['data','project']},**({'degrade_probability':degrade} if degrade else {})},'data_role':variant+'.yaml',
             'validation':{'map50':float(metrics.box.map50),'map50_95':float(metrics.box.map),'precision':float(metrics.box.mp),'recall':float(metrics.box.mr),'per_class':metrics.summary()},
             'runtime':{'python':platform.python_version(),'torch':torch.__version__,'ultralytics':ultralytics.__version__},'elapsed_seconds':time.monotonic()-start,
             'determinism':'MPS includes nondeterministic operators; exact repeats are not guaranteed.'}
@@ -118,8 +162,11 @@ if __name__=='__main__':
     parser.add_argument('--device',default='mps',help='mps, cpu, or CUDA device index')
     parser.add_argument('--name',help='run name under --run (default: the variant); use a new name for each experiment. finalize_study.py only reads the canonical base/improved names, so name runs you mean to finalize accordingly')
     parser.add_argument('--init',type=Path,help='start from this checkpoint instead of the COCO yolov8s.pt (for example to fine-tune a finished run at a larger --imgsz)')
+    parser.add_argument('--batch',type=int,default=8,help='training batch size; lower it for larger --imgsz')
+    parser.add_argument('--hyp',type=json.loads,help='JSON object of extra Ultralytics train arguments, e.g. \'{"lr0":0.002,"cos_lr":true}\'')
+    parser.add_argument('--degrade',type=float,default=0.0,help='probability of random blur / noise / JPEG on each training image (0 disables)')
     parser.add_argument('--resume',action='store_true',help='continue the interrupted run called --name from its last.pt, with the settings stored in that checkpoint')
     args=parser.parse_args()
     if args.command=='prepare':
         m=prepare(args.output,args.grouped);n=augment(args.output);print(json.dumps({'counts':m['counts'],'final_groups':m['final_groups'],'ball_crops':n}))
-    else:train(args.output,args.run,args.variant,args.epochs,args.imgsz,args.device,args.name,args.resume,args.init)
+    else:train(args.output,args.run,args.variant,args.epochs,args.imgsz,args.device,args.name,args.resume,args.init,args.batch,args.hyp,args.degrade)

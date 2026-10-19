@@ -3,7 +3,9 @@
 # virtual environment, pip and PyTorch caches, Ultralytics settings, dataset split and runs.
 # Delete that folder (default ./train-workspace) and nothing is left behind.
 #   EPOCHS=100 IMGSZ=640 DEVICE=mps NAME=mac-run tools/train_in_one_folder.sh
-# Optional: INIT=path/to/best.pt to fine-tune, RESUME=1 to continue an interrupted run.
+# Optional: INIT=path/to/best.pt to fine-tune, RESUME=1 to continue an interrupted run,
+# BATCH=4 for large IMGSZ, HYP='{"lr0":0.002,"cos_lr":true}' for extra Ultralytics arguments,
+# DEGRADE=0.4 to randomly blur / add noise / JPEG-compress 40% of training images (robustness).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -26,6 +28,9 @@ fi
 
 args=(train --output "$WORK/artifacts/performance-study" --run "$WORK/runs" --variant improved
       --epochs "$EPOCHS" --imgsz "$IMGSZ" --device "$DEVICE" --name "$NAME")
+[ -n "${BATCH:-}" ] && args+=(--batch "$BATCH")
+[ -n "${HYP:-}" ] && args+=(--hyp "$HYP")
+[ -n "${DEGRADE:-}" ] && args+=(--degrade "$DEGRADE")
 [ -n "${INIT:-}" ] && args+=(--init "$INIT")
 [ -n "${RESUME:-}" ] && args+=(--resume)
 "$PY" performance_study.py "${args[@]}"
