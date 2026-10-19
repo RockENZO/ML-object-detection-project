@@ -55,6 +55,11 @@ def main(argv=None):
         help="Copy the video unchanged (it must already be browser-playable H.264)",
     )
     viewer.add_argument("--max-height", type=int, default=720)
+    viewer.add_argument(
+        "--model-report",
+        type=Path,
+        help="Selection report (*-selection.json) of the detector checkpoint, shown on the page as a model card",
+    )
     args = parser.parse_args(argv)
     try:
         if args.command == "analyze":
@@ -92,6 +97,7 @@ def main(argv=None):
                 args.video,
                 not args.no_transcode,
                 args.max_height,
+                args.model_report,
             )
         elif args.command == "freeze":
             from .evaluation import freeze

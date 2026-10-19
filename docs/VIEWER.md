@@ -29,6 +29,16 @@ Pass `--metadata` to `analyze` with attacking-direction intervals to enable the 
 
 Top-down view in metres on a 105 × 68 m pitch. Each dot is a tracked person mapped through the PnLCalib homography: solid for observed, hollow dashed for a short velocity prediction (at most one second). Team colours are the accumulated jersey clusters, goalkeepers are yellow-green and referees dark with a gold ring. The dashed outline is the **camera footprint**: the ground area the broadcast camera currently covers, so it is obvious which part of the pitch is observed and which is not. Replays, close-ups and failed calibrations are greyed out rather than guessed.
 
+Three optional layers sit on the pitch. **Space control** colours the camera-visible part of the pitch by which team has the nearest observed outfield player (needs three or more per team; otherwise it is withheld). **Velocity** draws an arrow for the distance a player covers in about a second, from observed positions a few samples either side, and is skipped when the speed is implausible (over 12 m/s). **Track ids** labels the dots. Clicking a dot, or a row in the Players table, follows that player: a gold ring, their whole path on the pitch, a highlighted box and live speed on the video, and a speed-over-time chart.
+
+### Players
+
+Per tracked player: seconds visible, distance, average and peak speed (a one-second average, so one jittery step cannot set the record), and seconds above 20 and 25 km/h. Positions are smoothed over half a second, steps over 12 m/s are discarded as identity switches or calibration jumps, and nothing is carried across a camera cut or a gap. Figures count only the time a player is on camera, and a track can split in two when the tracker loses and re-finds a player, so treat distances as lower bounds rather than match totals.
+
+### Detector card
+
+Pass `--model-report <run>-selection.json` to `export-viewer` and the page shows the detector's validation metrics (overall and recall per class). The export refuses a report whose checkpoint hash differs from the model the run used. These are validation-split numbers on a small single-source dataset, used to choose the model, so they are optimistic and say nothing about other leagues, cameras or lighting.
+
 ### Momentum index
 
 Per second, up to four components are computed from **observed** evidence only, each from Team A's perspective in [-1, 1]:

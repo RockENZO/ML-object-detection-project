@@ -20,6 +20,8 @@
 </header>
 
 <main id="app" hidden>
+  <section class="kpis" id="kpis" aria-label="Clip summary"></section>
+
   <section class="stage">
     <div class="card video-card">
       <div class="video-wrap" id="videoWrap">
@@ -43,13 +45,20 @@
         <label><input type="checkbox" id="tFootprint" checked> Camera footprint</label>
         <label>Heat <select id="tHeat"><option value="">off</option><option value="A">Team A</option><option value="B">Team B</option></select></label>
       </div>
+      <div class="selected-chip" id="selectedChip" hidden></div>
     </div>
 
     <div class="card pitch-card">
       <div class="pitch-head">
         <div class="chips" id="status"></div>
       </div>
+      <div class="toggles pitch-toggles">
+        <label title="Colour the camera-visible pitch by which team has the nearest observed player"><input type="checkbox" id="tSpace"> Space control</label>
+        <label title="Arrow = where the player will be in about a second at the current speed"><input type="checkbox" id="tVelocity" checked> Velocity</label>
+        <label><input type="checkbox" id="tLabels"> Track ids</label>
+      </div>
       <canvas id="pitch" aria-label="Top-down pitch view of tracked players and ball"></canvas>
+      <div class="space-live" id="spaceLive"></div>
       <div class="pitch-foot" id="pitchFoot"></div>
     </div>
   </section>
@@ -62,6 +71,28 @@
     </div>
     <canvas id="momentum" aria-label="Momentum timeline"></canvas>
     <div class="tooltip" id="tooltip" hidden></div>
+  </section>
+
+  <section class="players-row" id="playersRow" hidden>
+    <div class="card" id="playersCard" hidden>
+      <div class="card-head">
+        <h2>Players</h2>
+        <span class="sub">visible time only &middot; click a row or a dot on the pitch</span>
+        <select id="playerTeam" aria-label="Filter players by team"><option value="">Both teams</option></select>
+      </div>
+      <div class="table-wrap">
+        <table class="players" id="players">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="player-detail" id="playerDetail"></div>
+      <p class="fine" id="playerNote"></p>
+    </div>
+    <div class="card" id="modelCard" hidden>
+      <div class="card-head"><h2>Detector</h2><span class="sub" id="modelSub"></span></div>
+      <div id="model"></div>
+    </div>
   </section>
 
   <section class="lower">
