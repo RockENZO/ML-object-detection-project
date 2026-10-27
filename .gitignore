@@ -8,3 +8,6 @@ artifacts/
 train-input/
 train-output/
 train-workspace/
+
+# Public demo checkpoint downloaded by tools/fetch_weights.py
+/models/football-ball-1280-robust.pt
