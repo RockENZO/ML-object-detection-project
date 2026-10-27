@@ -139,7 +139,28 @@ It reads validation images only. It shows how stable a detector is on this datas
 
 ## Weights
 
-Trained weights are not committed to `main`. Finished detectors are stored as a single `best.pt` plus a README (with its sha256 and validation metrics) on branches named `weights-*`, for example `weights-ball-1280-robust` (the detector behind the committed demo). Fetch one without switching branches:
+Download the detector behind the current committed viewer with the standard-library helper:
+
+```bash
+python tools/fetch_weights.py --output models/football-ball-1280-robust.pt
+```
+
+It pins source commit `f02f90d42acf560a955d58cb821e5dd8c10986d7` and requires SHA-256
+`5c5674f7775fd67b9ef6cd49a62ab8bc9aba5187bece9cc420897af5060ed3d3`, matching
+`reports/detector_ball1280robust_val_cpu_20261019.json`. The download is bounded to
+32 MiB; the 30-second HTTP timeout is an inactivity timeout, not a total runtime
+budget. A verified temporary file is published using an exclusive hard link;
+existing files, directories, dangling symlinks and concurrent arrivals are never
+overwritten. Checksum/network/publication failure removes only its own staging
+file. Choose a fresh destination when retrying; filesystems without hard links
+are rejected. No checkpoint is executed or loaded by this helper. Use trusted
+weights and retain the AGPL-3.0 conditions when subsequently loading them.
+
+This is the validation-selected `ball-1280-robust` detector. It is distinct from
+the historical grouped-test checkpoint and the earlier 72-epoch training seed;
+downloading it does not reproduce a training run or establish new metrics.
+
+Trained weights are not committed to `main`. Finished detectors are stored as a single `best.pt` plus a README (with its sha256 and validation metrics) on branches named `weights-*`, for example `weights-ball-1280-robust` (the detector behind the committed demo). For other checkpoints, the manual recipe below follows a mutable branch and does not verify its digest or protect an existing destination. Use a fresh output path and check that branch's published SHA-256 before loading:
 
 ```bash
 mkdir -p train-input
