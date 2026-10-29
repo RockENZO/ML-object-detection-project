@@ -13,6 +13,9 @@ import yolo_inference
 
 class CliTests(unittest.TestCase):
     def setUp(self):
+        runtime = patch("importlib.metadata.version", return_value="stub-runtime")
+        runtime.start()
+        self.addCleanup(runtime.stop)
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
@@ -60,6 +63,39 @@ class CliTests(unittest.TestCase):
         report = json.loads((output / "metrics.json").read_text(encoding="utf-8"))
         self.assertEqual(report["box_precision"], 0.7)
         self.assertEqual(report["split"], "test")
+
+    def test_yaml_cannot_redirect_evaluation_away_from_verified_test_files(self):
+        for test_path in ['train/images', '/other/images', ['test/images'], 'test.txt', None]:
+            with self.subTest(test_path=test_path):
+                dataset=json.loads(self.data.read_text())
+                dataset['test']=test_path
+                self.data.write_text(json.dumps(dataset))
+                with self.assertRaisesRegex(SystemExit, 'test/images'):
+                    yolo_inference.main(['--model', str(self.model), 'evaluate', '--data', str(self.data), '--output-dir', str(self.root/'out')])
+                self.yolo.return_value.val.assert_not_called()
+
+    def test_extra_test_image_is_rejected_before_model_evaluation(self):
+        (self.root/'test/images/unreviewed.jpg').write_bytes(b'unreviewed')
+        with self.assertRaisesRegex(SystemExit, 'manifest'):
+            yolo_inference.main(['--model', str(self.model), 'evaluate', '--data', str(self.data), '--output-dir', str(self.root/'out')])
+        self.yolo.return_value.val.assert_not_called()
+
+    def test_duplicate_manifest_record_cannot_inflate_test_count(self):
+        path=self.root/'manifest.json'
+        manifest=json.loads(path.read_text());manifest['records']*=2
+        path.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(SystemExit, 'Duplicate'):
+            yolo_inference.main(['--model', str(self.model), 'evaluate', '--data', str(self.data), '--output-dir', str(self.root/'out')])
+        self.yolo.return_value.val.assert_not_called()
+
+    def test_label_name_must_match_what_the_image_loader_uses(self):
+        path=self.root/'manifest.json'
+        manifest=json.loads(path.read_text())
+        (self.root/'test/labels/test.txt').rename(self.root/'test/labels/other.txt')
+        manifest['records'][0]['label']='other.txt';path.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(SystemExit, 'label'):
+            yolo_inference.main(['--model', str(self.model), 'evaluate', '--data', str(self.data), '--output-dir', str(self.root/'out')])
+        self.yolo.return_value.val.assert_not_called()
 
     def test_coco_checkpoint_rejected(self):
         self.yolo.return_value.names = {0: 'person', 1: 'bicycle'}
