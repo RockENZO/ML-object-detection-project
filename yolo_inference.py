@@ -70,15 +70,11 @@ def main(argv: list[str] | None = None) -> int:
     if not manifest.is_file():
         raise SystemExit('Evaluation requires grouped split manifest; run prepare_grouped_split.py first')
     split = json.loads(manifest.read_text())
-    root = Path(dataset['path'])
-    test_records = [record for record in split['records'] if record['split'] == 'test']
-    if not test_records:
-        raise SystemExit('Test split is empty')
-    for record in test_records:
-        for kind, key, hash_key in [('images', 'image', 'image_sha256'), ('labels', 'label', 'label_sha256')]:
-            artifact = root / 'test' / kind / Path(record[key]).name
-            if not artifact.is_file() or digest(artifact) != record[hash_key]:
-                raise SystemExit('Test artifact differs from split manifest: ' + str(artifact))
+    from evaluation_contract import verify_test_inputs
+    try:
+        test_records = verify_test_inputs(dataset, split)
+    except (ValueError, OSError) as error:
+        raise SystemExit(str(error)) from error
     metrics = model.val(data=str(args.data), split="test", imgsz=args.imgsz,
                         plots=True, batch=args.batch, device=args.device, **run_options)
     summary = {
