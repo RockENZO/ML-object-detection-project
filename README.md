@@ -80,6 +80,12 @@ Use the resulting `best.pt` checkpoint for a single, held-out **test** evaluatio
 python yolo_inference.py --model runs/grouped-baseline/train/weights/best.pt evaluate --data artifacts/grouped/data.yaml
 ```
 
+The evaluation CLI checks the frozen test images and labels against the split
+manifest. If a previous evaluation left `test/labels.cache`, move that file
+outside the test directory or use a freshly prepared split before rerunning.
+Ultralytics can then parse the verified label files again.
+
+
 The command writes `runs/codex-evaluate/metrics.json` with box precision, recall, mAP@0.5, and mAP@0.5:0.95. Record the checkpoint, dataset version, image size, Ultralytics version, and exact command with any performance claim. The test split must remain untouched during model selection. Do not compare a YOLOv5 training result with inference from different YOLOv8 weights as though they were one model.
 
 Historical **97.5% precision** and **85% less manual review** figures are not supported by the published experiments. The detector reports below use scoped, grouped test partitions; no manual-review time-saving study is published. Current profile descriptions use those scoped results and mark broadcast analysis experimental.

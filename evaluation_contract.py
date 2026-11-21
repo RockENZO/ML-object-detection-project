@@ -49,4 +49,10 @@ def verify_test_inputs(dataset, split):
         actual = list(directory.iterdir())
         if any(p.is_symlink() or not p.is_file() for p in actual) or {p.name for p in actual} != names:
             raise ValueError('Test directory membership differs from split manifest: ' + str(directory))
+    # Ultralytics 8.3.200 can reuse parsed labels from this sibling cache.
+    # Its path/size fingerprint does not verify the label bytes above.
+    label_cache = root / 'test' / 'labels.cache'
+    if label_cache.exists() or label_cache.is_symlink():
+        raise ValueError(f'Evaluation requires fresh label parsing. Move {label_cache} '
+                         'outside the test directory or use a freshly prepared split.')
     return test_records

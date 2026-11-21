@@ -43,6 +43,19 @@ class EvaluationContractTests(unittest.TestCase):
                 if extra.is_dir():extra.rmdir()
                 else:extra.unlink()
 
+    def test_existing_label_cache_is_rejected_without_modification(self):
+        cache = self.root / 'test' / 'labels.cache'
+        cache.write_bytes(b'placeholder for a cache left by a prior evaluation')
+        with self.assertRaisesRegex(ValueError, 'labels.cache'):
+            verify_test_inputs(self.dataset, self.split)
+        self.assertEqual(cache.read_bytes(), b'placeholder for a cache left by a prior evaluation')
+
+        cache.unlink()
+        cache.symlink_to(self.root / 'missing')
+        with self.assertRaisesRegex(ValueError, 'labels.cache'):
+            verify_test_inputs(self.dataset, self.split)
+        self.assertTrue(cache.is_symlink())
+
     def test_test_group_cannot_appear_in_training_or_validation(self):
         for split in ('train','val'):
             manifest=deepcopy(self.split)
