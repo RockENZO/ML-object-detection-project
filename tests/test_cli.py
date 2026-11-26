@@ -57,12 +57,44 @@ class CliTests(unittest.TestCase):
         self.assertEqual(0, yolo_inference.main([
             "--model", str(self.model), "evaluate", "--data", str(self.data),
             "--output-dir", str(output)]))
-        self.yolo.return_value.val.assert_called_once_with(
-            data=str(self.data), split="test", imgsz=640, plots=True, batch=4, device="cpu",
-            project=str(output.parent), name=output.name, exist_ok=True)
+        call = self.yolo.return_value.val.call_args.kwargs
+        self.assertEqual({key: value for key, value in call.items() if key != 'data'}, {
+            'split': 'test', 'imgsz': 640, 'plots': True, 'batch': 4, 'device': 'cpu',
+            'project': str(output.parent), 'name': output.name, 'exist_ok': True,
+        })
+        self.assertNotEqual(Path(call["data"]), self.data)
+        self.assertFalse(Path(call["data"]).exists())
         report = json.loads((output / "metrics.json").read_text(encoding="utf-8"))
         self.assertEqual(report["box_precision"], 0.7)
         self.assertEqual(report["split"], "test")
+
+    def test_consecutive_evaluations_isolate_loader_cache(self):
+        original = self.root / "test"
+        staged_paths = []
+        result = self.yolo.return_value.val.return_value
+
+        def simulate_loader(**kwargs):
+            config = Path(kwargs["data"])
+            dataset = json.loads(config.read_text())
+            images = Path(dataset["path"]) / dataset["test"]
+            labels = images.with_name("labels")
+            self.assertFalse(labels.with_suffix(".cache").exists())
+            for staged, source in [(images / "test.jpg", original / "images/test.jpg"),
+                                   (labels / "test.txt", original / "labels/test.txt")]:
+                self.assertEqual(staged.read_bytes(), source.read_bytes())
+            labels.with_suffix(".cache").write_bytes(b"new cache")
+            staged_paths.append(config.parent)
+            return result
+
+        self.yolo.return_value.val.side_effect = simulate_loader
+        for name in ["base", "improved"]:
+            self.assertEqual(yolo_inference.main([
+                "--model", str(self.model), "evaluate", "--data", str(self.data),
+                "--output-dir", str(self.root / name),
+            ]), 0)
+        self.assertFalse((original / "labels.cache").exists())
+        self.assertEqual(len(set(staged_paths)), 2)
+        self.assertTrue(all(not path.exists() for path in staged_paths))
 
     def test_yaml_cannot_redirect_evaluation_away_from_verified_test_files(self):
         for test_path in ['train/images', '/other/images', ['test/images'], 'test.txt', None]:

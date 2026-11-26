@@ -45,6 +45,7 @@ def final_test(study,run,device="mps"):
     from ultralytics import YOLO
     import yaml
     import yolo_inference
+    from evaluation_contract import isolated_test_dataset, verify_test_inputs
     output=run/'final-test-comparison.json'
     if output.exists():raise ValueError('Final comparison already evaluated')
     selection=json.loads((run/'resolution-selection.json').read_text());manifest=json.loads((study/'manifest.json').read_text())
@@ -59,14 +60,18 @@ def final_test(study,run,device="mps"):
         yolo_inference.main(['--model',str(checkpoint),'evaluate','--data',str(study/(variant+'.yaml')),'--output-dir',str(destination),'--imgsz',str(size),'--batch','4','--device',device])
         reports[variant]=json.loads((destination/'metrics.json').read_text())
     # Source-group breakdown of the selected detector, after all selection was frozen.
-    by_group={}
+    dataset = yaml.safe_load((study / 'improved.yaml').read_text())
+    verified_records = verify_test_inputs(dataset, manifest)
+    by_group = {}
     for group in manifest['final_groups']:
-        records=[r for r in manifest['records'] if r['split']=='test' and r['group']==group]
-        listing=study/('final-group-'+group+'.txt');listing.write_text(''.join(str((study/'test/images'/Path(r['image']).name).resolve())+'\n' for r in records))
-        data=yaml.safe_load((study/'improved.yaml').read_text());data['test']=str(listing.resolve())
-        config=study/('final-group-'+group+'.yaml');config.write_text(yaml.safe_dump(data))
-        metrics=YOLO(str(run/'improved/weights/best.pt')).val(data=str(config.resolve()),split='test',imgsz=selection['chosen']['imgsz'],batch=4,device=device,plots=True,project=str(run.resolve()),name='final-group-'+group)
-        by_group[group]={'images':len(records),'metrics':summarize(metrics)}
+        records = [record for record in verified_records if record['group'] == group]
+        with isolated_test_dataset(dataset, records) as config:
+            metrics = YOLO(str(run / 'improved/weights/best.pt')).val(
+                data=str(config), split='test', imgsz=selection['chosen']['imgsz'],
+                batch=4, device=device, plots=True, project=str(run.resolve()),
+                name='final-group-' + group,
+            )
+        by_group[group] = {'images': len(records), 'metrics': summarize(metrics)}
     result={'protocol':manifest['protocol'],'split_manifest_sha256':digest(study/'manifest.json'),
             'resolution_selection_sha256':digest(run/'resolution-selection.json'),'results':reports,'selected_by_group':by_group,
             'limitations':manifest['limitations']+['Only two provisional video-prefix groups in final test; these are not proven independent matches.',

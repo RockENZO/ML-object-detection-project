@@ -1,5 +1,10 @@
 """Verify the exact flat test split produced by prepare_grouped_split.py."""
+from contextlib import contextmanager
+import json
 from pathlib import Path
+import shutil
+from tempfile import TemporaryDirectory
+
 from prepare_grouped_split import digest
 
 
@@ -56,3 +61,27 @@ def verify_test_inputs(dataset, split):
         raise ValueError(f'Evaluation requires fresh label parsing. Move {label_cache} '
                          'outside the test directory or use a freshly prepared split.')
     return test_records
+
+
+@contextmanager
+def isolated_test_dataset(dataset, verified_records):
+    """Give the loader a fresh private test directory for each pass."""
+    if not verified_records:
+        raise ValueError("Cannot stage an empty test split")
+    source = Path(dataset["path"]) / "test"
+    with TemporaryDirectory(prefix="football-evaluate-") as directory:
+        staging = Path(directory)
+        for kind, key in (("images", "image"), ("labels", "label")):
+            destination = staging / kind
+            destination.mkdir()
+            for record in verified_records:
+                name = Path(record[key]).name
+                copied = destination / name
+                shutil.copyfile(source / kind / name, copied)
+                if digest(copied) != record[key + "_sha256"]:
+                    raise ValueError(f"Test artifact changed while staging: {name}")
+        config = staging / "data.yaml"
+        # Preserve the absolute dataset root for relative train/val paths.
+        loader_config = {**dataset, "test": str(staging / "images")}
+        config.write_text(json.dumps(loader_config), encoding="utf-8")
+        yield config
