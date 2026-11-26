@@ -70,13 +70,14 @@ def main(argv: list[str] | None = None) -> int:
     if not manifest.is_file():
         raise SystemExit('Evaluation requires grouped split manifest; run prepare_grouped_split.py first')
     split = json.loads(manifest.read_text())
-    from evaluation_contract import verify_test_inputs
+    from evaluation_contract import isolated_test_dataset, verify_test_inputs
     try:
         test_records = verify_test_inputs(dataset, split)
+        with isolated_test_dataset(dataset, test_records) as loader_config:
+            metrics = model.val(data=str(loader_config), split="test", imgsz=args.imgsz,
+                                plots=True, batch=args.batch, device=args.device, **run_options)
     except (ValueError, OSError) as error:
         raise SystemExit(str(error)) from error
-    metrics = model.val(data=str(args.data), split="test", imgsz=args.imgsz,
-                        plots=True, batch=args.batch, device=args.device, **run_options)
     summary = {
         "model": args.model.name,
         "model_sha256": digest(args.model),
